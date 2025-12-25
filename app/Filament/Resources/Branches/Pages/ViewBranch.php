@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Filament\Resources\Branches\Pages;
+
+use App\Filament\Resources\Branches\BranchResource;
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
+use Filament\Resources\Pages\ViewRecord;
+
+class ViewBranch extends ViewRecord
+{
+    protected static string $resource = BranchResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            EditAction::make(),
+
+            Action::make('back')
+                ->label('Back to list')
+                ->url($this->getResource()::getUrl('index'))
+                ->color('gray')
+                ->icon('heroicon-o-arrow-left'),
+        ];
+    }
+}

@@ -1,0 +1,45 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations (add the slug column).
+     */
+    public function up(): void
+    {
+        // 1. Add slug to the 'flights' table
+        Schema::table('flights', function (Blueprint $table) {
+            // Add the string column, allow null initially, then make it unique and indexed
+            // We use 'nullable' here temporarily, in case you manually backfill data later.
+            // When using Spatie, the slug will be automatically created on save.
+            $table->string('slug')->nullable()->unique()->after('flight_number');
+        });
+
+        // 2. Add slug to the 'airlines' table
+        Schema::table('airlines', function (Blueprint $table) {
+            // We assume 'name' is the column used to generate the slug, 
+            // and we place it after 'name'.
+            $table->string('slug')->nullable()->unique()->after('name');
+        });
+
+        // Add more Schema::table() calls here for any other tables (e.g., 'destinations', 'airports')
+    }
+
+    /**
+     * Reverse the migrations (remove the slug column).
+     */
+    public function down(): void
+    {
+        Schema::table('flights', function (Blueprint $table) {
+            $table->dropColumn('slug');
+        });
+
+        Schema::table('airlines', function (Blueprint $table) {
+            $table->dropColumn('slug');
+        });
+    }
+};
