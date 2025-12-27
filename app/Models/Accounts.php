@@ -87,6 +87,17 @@ class Accounts extends Authenticatable
         'google2fa_secret',
     ];
 
+    public function getAccountNameWithCategoryAndBranchAttribute(): string
+{
+    $accountName = $this->account_name ?? 'Unknown';
+    $category = $this->accountType?->accounts_category ?? 'Unknown';
+    $branch = $this->branch?->branch_name ?? 'Unknown';
+
+    return "{$accountName} {$category} ({$branch})";
+}
+// Usage in Blade (no joins needed)
+
+//{{ $account->account_name_with_category_and_branch }}
 
 public function currency()
     {

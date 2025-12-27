@@ -24,25 +24,18 @@ class AccountLedgerForm
     {
         return $schema
             ->components([
-                  Grid::make(12)
-                    ->schema([
-                           Select::make('branch_id')
-                            ->label('Branch')
-                            ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
-                            ->live()
-                            ->afterStateUpdated(function ($set) {
-                                $set('account', null);
-                                $set('currency', null);
-                            })
-                            ->searchable()
-                            ->columnSpan(6),
-                         DatePicker::make('date_confirm')
-                           ->label('Transaction Date')
-                            ->default(now())
-                            ->columnSpan(6),
+                Select::make('branch_id')
+                    ->label('Branch')
+                    ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
+                    ->live()
+                    ->afterStateUpdated(function ($set) {
+                        $set('account', null);
+                        $set('currency', null);
+                        $set('service_id', null);
+                    })
+                    ->searchable()
+                    ->columnSpan(6),
 
-             
-                ])->columnSpanFull(),
                 /* Row 2:  Account(4) | Currency(4) | Service(4) */
               Grid::make(12)
                     ->schema([
@@ -60,7 +53,32 @@ class AccountLedgerForm
             ->live() // Crucial: This triggers the refresh for the Currency field
             ->afterStateUpdated(fn ($set) => $set('currency', null)) // Clear currency if account changes
             ->searchable()
-            ->columnSpan(6),
+            ->columnSpan(4),
+
+            Select::make('service_id')
+            ->label('Service')
+            ->options(function (callable $get) {
+                $branchId = $get('branch_id');
+
+                if (!$branchId) {
+                    return [];
+                }
+
+                // 1. Fetch the branch to get its 'active_services' array
+                $branch = Branch::find($branchId);
+
+                if (!$branch || empty($branch->active_services)) {
+                    return [];
+                }
+
+                // 2. Fetch only the services whose IDs are in the branch's active_services array
+                return Service::query()
+                    ->where('status', true)
+                    ->whereIn('id', $branch->active_services) // Use whereIn on the array from Branch
+                    ->pluck('title', 'id');
+            })
+            ->searchable()
+            ->columnSpan(4),
                    
         /* 3. Currency (Dependent on Account) */
         Select::make('currency')
@@ -87,21 +105,24 @@ class AccountLedgerForm
                     ->toArray();
             })
             ->searchable()
-            ->columnSpan(6),
+            ->columnSpan(4),
     ])
     ->columnSpanFull(),
                 /* Row 3: Credit(6) | Debit(6) */
                 Grid::make(12)
                     ->schema([
-                        
+                         DatePicker::make('date_confirm')
+                           ->label('Transaction Date')
+                            ->default(now())
+                            ->columnSpan(4),
                         TextInput::make('debit')
                             ->numeric()
                             ->default(0)
-                            ->columnSpan(6),
+                            ->columnSpan(4),
                         TextInput::make('credit')
                             ->numeric()
                             ->default(0)
-                            ->columnSpan(6),
+                            ->columnSpan(4),
 
                         
                     ])
