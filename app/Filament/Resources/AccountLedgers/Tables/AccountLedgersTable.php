@@ -66,6 +66,7 @@ class AccountLedgersTable
                             $totals = Account_ledger::query()
                                 ->where('account', $record->uid)
                                 ->where('currency', $currency->id)
+                                ->where('status', '=','Confirmed')
                                 ->selectRaw('SUM(credit) as total_credit, SUM(debit) as total_debit')
                                 ->first();
 
