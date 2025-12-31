@@ -78,3 +78,11 @@ static::updating(function ($model) {
         return $this->belongsTo(Service::class, 'service_id', 'id');
     }
 }
+
+// composer require barryvdh/laravel-dompdf
+
+// composer require alperenersoy/filament-export
+
+// Publish the configuration file (optional, for customization):
+
+// php artisan vendor:publish --provider="AlperenErsoy\FilamentExport\FilamentExportServiceProvider" --tag="config"

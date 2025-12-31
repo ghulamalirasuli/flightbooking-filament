@@ -41,6 +41,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             //  ->sidebarCollapsibleOnDesktop()
             ->sidebarFullyCollapsibleOnDesktop()
+            ->databaseNotifications() // Ensure this line is present
+        ->databaseNotificationsPolling('30s')// 30 seconds
 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

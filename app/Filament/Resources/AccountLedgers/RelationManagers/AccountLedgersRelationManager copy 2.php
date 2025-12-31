@@ -50,7 +50,12 @@ use App\Models\Accounts;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+// use Filament\Tables\Actions\Action;
+use Filament\Actions\Action;
+use Filament\Tables\Actions\ExportHeaderAction; // Import this
+use App\Filament\Exports\AccountLedgerExporter; // Import your exporter
 
+use Filament\Actions\ExportAction;
 
 class AccountLedgersRelationManager extends RelationManager
 {
@@ -131,6 +136,7 @@ class AccountLedgersRelationManager extends RelationManager
                     ->toArray();
             })
             ->searchable()
+            ->required()
             ->default(fn ($livewire) => 
                             $livewire->activeTab !== 'all' ? $livewire->activeTab : $this->getOwnerRecord()->default_currency
             )
@@ -160,100 +166,92 @@ class AccountLedgersRelationManager extends RelationManager
                     ->columnSpanFull(),
         ]);
 }
-    public function table(Table $table): Table
-    {
-        return $table
-            ->recordTitleAttribute('reference_no')
-            ->defaultSort('date_confirm', 'asc')
-            ->columns([
-                TextColumn::make('date_confirm')
-                    ->label('Date')
-                    ->date()
-                    ->sortable(),
+public function table(Table $table): Table
+{
+    return $table
+        ->recordTitleAttribute('reference_no')
+        ->defaultSort('date_confirm', 'asc')
+        ->columns([
+            TextColumn::make('date_confirm')
+                ->label('Date')
+                ->date()
+                ->sortable(),
 
-                TextColumn::make('reference_no')
-                    ->label('Reference')
-                    ->searchable(),
+            TextColumn::make('reference_no')
+                ->label('Reference')
+                ->searchable(),
 
-                TextColumn::make('description')->wrap(),
+            TextColumn::make('description')->wrap(),
 
-                TextColumn::make('debit')
-                    ->numeric()
-                    ->color('danger')
-                    ->summarize(
-                        Sum::make()
-                            ->label('Total Debit')
-                            // Hide summary when mixing currencies in "All" tab
-                            ->hidden(fn ($livewire) => $livewire->activeTab === 'all' || $livewire->activeTab === null)
-                    ),
+            TextColumn::make('debit')
+                ->numeric()
+                ->color('danger')
+                ->summarize(
+                    Sum::make()
+                        ->label('Total Debit')
+                        // Only show summary if a specific currency is filtered
+                        ->hidden(fn ($livewire) => empty($livewire->tableFilters['currency']['value']))
+                ),
 
-                TextColumn::make('credit')
-                    ->numeric()
-                    ->color('success')
-                    ->summarize(
-                        Sum::make()
-                            ->label('Total Credit')
-                            ->hidden(fn ($livewire) => $livewire->activeTab === 'all' || $livewire->activeTab === null)
-                    ),
+            TextColumn::make('credit')
+                ->numeric()
+                ->color('success')
+                ->summarize(
+                    Sum::make()
+                        ->label('Total Credit')
+                        // Only show summary if a specific currency is filtered
+                        ->hidden(fn ($livewire) => empty($livewire->tableFilters['currency']['value']))
+                ),
 
-                // 1. FIXED: Restored Currency Column
-                TextColumn::make('currencyInfo.currency_name')
-                    ->label('Currency')
-                    ->badge()
-                    // Hide this column when a specific currency tab is already selected
-                    ->hidden(fn ($livewire) => $livewire->activeTab !== 'all' && $livewire->activeTab !== null),
+            TextColumn::make('currencyInfo.currency_name')
+                ->label('Currency')
+                ->badge()
+                // Show this column only when NO specific currency is filtered
+                ->hidden(fn ($livewire) => !empty($livewire->tableFilters['currency']['value'])),
 
-                TextColumn::make('balance')
-                    ->label('Balance')
-                    // 2. FIXED: Hide Running Balance column in the "All" tab to prevent confusion
-                    ->hidden(fn ($livewire) => $livewire->activeTab === 'all' || $livewire->activeTab === null)
-                    ->state(function ($record, $rowLoop, $livewire) {
-                        $records = $livewire->getTableRecords();
-                        return $records->slice(0, $rowLoop->index + 1)
-                            ->reduce(fn ($carry, $item) => $carry + ($item->credit - $item->debit), 0);
-                    })
-                    ->numeric()
-                    ->color(fn ($state) => $state >= 0 ? 'success' : 'danger')
-                    ->summarize(
-                        Summarizer::make()
-                            ->label('Net Balance')
-                            ->hidden(fn ($livewire) => $livewire->activeTab === 'all' || $livewire->activeTab === null)
-                            ->using(fn ($query) => $query->sum('credit') - $query->sum('debit'))
-                    ),
+            TextColumn::make('balance')
+                ->label('Balance')
+                // 1. Hide the column entirely if multiple currencies are being shown
+                ->hidden(fn ($livewire) => empty($livewire->tableFilters['currency']['value']))
+                ->state(function ($record, $rowLoop, $livewire) {
+                    $records = $livewire->getTableRecords();
+                    // 2. Calculate running balance for the filtered currency
+                    return $records->slice(0, $rowLoop->index + 1)
+                        ->reduce(fn ($carry, $item) => $carry + ($item->credit - $item->debit), 0);
+                })
+                ->numeric()
+                ->color(fn ($state) => $state >= 0 ? 'success' : 'danger')
+                ->summarize(
+                    Summarizer::make()
+                        ->label('Net Balance')
+                        ->hidden(fn ($livewire) => empty($livewire->tableFilters['currency']['value']))
+                        ->using(fn ($query) => $query->sum('credit') - $query->sum('debit'))
+                ),
 
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'Confirmed' => 'success',
-                        'Pending' => 'warning',
-                        'Cancelled' => 'danger',
-                        default => 'gray',
-                    }),
-            ])
-            ->filters([
-                
-                 // Use a specific grid for the date filters to keep them together if desired, 
-            // or let them stand as individual columns.
-             // Date Filters separated into individual components for a single-row look
+            TextColumn::make('status')
+                ->badge()
+                ->color(fn ($state) => match ($state) {
+                    'Confirmed' => 'success',
+                    'Pending' => 'warning',
+                    'Cancelled' => 'danger',
+                    default => 'gray',
+                }),
+        ])
+        ->filters([
             Filter::make('date_range')
                 ->schema([
-                    DatePicker::make('date_confirm_from')
-                        ->label('From Date'),
-                    DatePicker::make('date_confirm_until')
-                        ->label('Until Date'),
+                    DatePicker::make('date_confirm_from')->label('From Date'),
+                    DatePicker::make('date_confirm_until')->label('Until Date'),
                 ])
-                ->columns(2) // This puts 'From' and 'Until' side-by-side inside this filter's column
-                ->columnSpan(6) // Occupy the remaining space in the row
+                ->columns(2)
+                ->columnSpan(6)
                 ->query(function (Builder $query, array $data): Builder {
                     return $query
                         ->when($data['date_confirm_from'], fn ($q, $date) => $q->whereDate('date_confirm', '>=', $date))
                         ->when($data['date_confirm_until'], fn ($q, $date) => $q->whereDate('date_confirm', '<=', $date));
                 }),
 
-            TrashedFilter::make()
-                ->columnSpan(2), // Adjust span to fit (out of 12 or based on filtersFormColumns)
-
-          
+            TrashedFilter::make()->columnSpan(2),
 
             SelectFilter::make('currency')
                 ->label('Currency')
@@ -277,16 +275,55 @@ class AccountLedgersRelationManager extends RelationManager
                 ])
                 ->columnSpan(2)
 
-           
-
-        ], layout: FiltersLayout::AboveContentCollapsible)
-        // CRITICAL: This defines the "Bootstrap-style" grid for the filter row
+        ],
+        //  layout: FiltersLayout::AboveContent
+        layout: FiltersLayout::Modal
+        //  layout: FiltersLayout::AboveContentCollapsible
+        
+        )
+->deferFilters(false)// Keep this to auto-apply filters without needing an "Apply" button
+        
         ->filtersFormColumns(12) 
         ->filtersResetActionPosition(FiltersResetActionPosition::Footer)
         ->filtersFormWidth(Width::Full)
              ->headerActions([
                 CreateAction::make()
                 ->label('New Entry'), // No need to define ->form() here anymore
+
+                ExportAction::make()
+                    ->exporter(AccountLedgerExporter::class)
+                    ->label('Export to Excel')
+                    ->icon('heroicon-o-arrow-down-tray'),
+                    // ->columnSpan(2),
+
+              Action::make('print')
+                ->label('Print Ledger')
+                ->icon('heroicon-o-printer')
+                ->color('info')
+                ->url(fn () => route('account_ledger.print', [
+                    'ownerId' => $this->getOwnerRecord()->uid,
+                    'filters' => $this->tableFilters, 
+                ]))
+                ->openUrlInNewTab(),
+
+                  Action::make('download_pdf')
+                    ->label('Download PDF')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->url(fn () => route('account_ledger.print', [
+                        'ownerId' => $this->getOwnerRecord()->uid,
+                        'filters' => $this->tableFilters,
+                        'format' => 'pdf', // Append format=pdf
+                    ]))
+                    ->openUrlInNewTab(),
+         
+                    Action::make('send_email')
+                    ->label('Send Email')
+                    ->icon('heroicon-o-envelope')
+                    ->url(fn () => route('account_ledger.send_email', [
+                        'ownerId' => $this->getOwnerRecord()->uid,
+                        'filters' => $this->tableFilters,
+                    ]))
+                    ->openUrlInNewTab(),
    ])
         ->actions([
             ActionGroup::make([
@@ -304,18 +341,4 @@ class AccountLedgersRelationManager extends RelationManager
         ]);
     }
 
-    public function getTabs(): array
-    {
-        $tabs = ['all' => Tab::make('All Currencies')];
-
-        $authCurrencies = $this->getOwnerRecord()->access_currency ?? [];
-        $currencies = \App\Models\Currency::whereIn('id', $authCurrencies)->get();
-
-        foreach ($currencies as $currency) {
-            $tabs[$currency->id] = Tab::make($currency->currency_name)
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('currency', $currency->id));
-        }
-
-        return $tabs;
-    }
 }
