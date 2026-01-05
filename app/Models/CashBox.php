@@ -19,10 +19,11 @@ class CashBox extends Model
         'entry_type', 'status', 'date_confirm', 'date_update', 'update_by'
     ];
 
+
     // ✅ Fixed: belongsTo, not belongsToMany
     public function currency(): BelongsTo
     {
-        return $this->belongsTo(Currency::class, 'currency_id', 'uid');
+        return $this->belongsTo(Currency::class, 'currency_id', 'id');
     }
 
     public function currencyFrom(): BelongsTo
@@ -32,12 +33,17 @@ class CashBox extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id', 'uid');
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function updated_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'update_by', 'id');
     }
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch::class, 'branch_id', 'uid');
+        return $this->belongsTo(Branch::class, 'branch_id', 'id');
     }
 
     public function account(): BelongsTo

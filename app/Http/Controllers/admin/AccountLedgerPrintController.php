@@ -1,5 +1,6 @@
 <?php 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\admin;
+use App\Http\Controllers\Controller;
 
 use App\Models\Account_ledger;
 use App\Models\Accounts;
@@ -59,7 +60,7 @@ class AccountLedgerPrintController extends Controller
         // Check if the request is for PDF
         if ($request->query('format') === 'pdf') {
             // Generate PDF
-            $pdf = Pdf::loadView('account_ledger.print_ledger', [
+            $pdf = Pdf::loadView('admin.account_ledger.print_ledger', [
                 'records' => $records,
                 'account' => $account,
                 'fromDate' => $fromDate,
@@ -74,7 +75,7 @@ class AccountLedgerPrintController extends Controller
         }
 
         // Otherwise, return the print preview
-        return view('account_ledger.print_ledger', [
+        return view('admin.account_ledger.print_ledger', [
             'records' => $records,
             'account' => $account,
             'fromDate' => $fromDate,

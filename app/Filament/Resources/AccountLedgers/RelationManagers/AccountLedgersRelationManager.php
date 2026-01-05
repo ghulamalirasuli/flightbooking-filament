@@ -81,21 +81,31 @@ class AccountLedgersRelationManager extends RelationManager
                     ])->columnSpanFull(),
                 Grid::make(12)
                     ->schema([
-                        Select::make('account')
-                            ->label('Account')
-                            ->options(function (callable $get) {
-                                $branchId = $get('branch_id');
-                                return Accounts::query()
-                                    ->where('is_active', true)
-                                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-                                    ->get()
-                                    ->pluck('account_name', 'uid');
-                            })
-                            ->live()
-                            ->default(fn () => $this->getOwnerRecord()->uid)
-                            ->afterStateUpdated(fn ($set) => $set('currency', null))
-                            ->searchable()
-                            ->columnSpan(6),
+                 Select::make('account')
+                    ->label('Account')
+                    ->options(function (callable $get) {
+                        $branchId = $get('branch_id');
+
+                        return \App\Models\Accounts::query()
+                            ->with(['accountType', 'branch']) // Eager load for performance
+                            ->where('is_active', true)
+                            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                            ->get()
+                            ->mapWithKeys(function ($account) {
+                                // Using your specific formatting logic
+                                $name = $account->account_name;
+                                $category = $account->accountType?->accounts_category ?? 'N/A';
+                                $branch = $account->branch?->branch_name ?? 'N/A';
+
+                                return [
+                                    $account->uid => "({$branch}) {$name} - {$category}"
+                                ];
+                            });
+                    })
+                    ->live()
+                    ->afterStateUpdated(fn ($set) => $set('currency', null))
+                    ->searchable()
+                    ->columnSpan(6),
                         Select::make('currency')
                             ->label('Currency')
                             ->options(function (callable $get) {
