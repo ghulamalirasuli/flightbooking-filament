@@ -17,7 +17,11 @@ use App\Http\Controllers\admin\DepositPrintController;
 
 // Route for Printing
 Route::get('/admin/deposits/print/{record}', [DepositPrintController::class, 'print'])
-    ->name('deposits.print');
+    ->name('deposits.print')->middleware(['auth']);
+
+Route::get('/admin/deposits/printall', [DepositPrintController::class, 'print_all'])
+    ->name('deposits.print_all')
+    ->middleware(['auth']);
     
 Route::get('/admin/account_ledger/ledger-print/{ownerId}', [AccountLedgerPrintController::class, 'print'])
     ->name('account_ledger.print')

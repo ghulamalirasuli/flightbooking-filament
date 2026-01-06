@@ -112,24 +112,16 @@ class DepositsTable
                     ->label('Type')
                     ->searchable()->toggleable(isToggledHiddenByDefault: true),
 
-                // TextColumn::make('amount_from')
-                //     ->label('Amount')
-                //     ->searchable(),
-
-                //   TextColumn::make('currency.currency_name')
-                //     ->label('Currency')
-                //     ->searchable(),
-
                 // First Column
                 TextColumn::make('debit_display') // Unique identifier
                     ->label('Debit')
-                    ->state(fn ($record): string => $record->currency?->currency_name ?? '') 
+                    ->state(fn ($record): string => $record->currency?->currency_code ?? '') 
                     ->description(fn ($record): string => $record->debit ?? '0'),
 
                 // Second Column
                 TextColumn::make('credit_display') // Unique identifier
                     ->label('Credit')
-                    ->state(fn ($record): string => $record->currency?->currency_name ?? '')
+                    ->state(fn ($record): string => $record->currency?->currency_code ?? '')
                     ->description(fn ($record): string => $record->credit ?? '0'),
 
                 TextColumn::make('status')
@@ -162,7 +154,40 @@ class DepositsTable
                     ->toggleable(isToggledHiddenByDefault: true),
         ])
             ->headerActions([
+        // DepositsTable.php inside headerActions
+Action::make('print_pdf')
+    ->label('Download PDF')
+    ->icon('heroicon-o-arrow-down-tray')
+    ->color('success')
+    ->url(function ($livewire) {
+        $filters = $livewire->tableFilters;
+        return route('deposits.print_all', [
+            'filters' => $filters,
+            'format' => 'pdf' // Add this flag
+        ]);
+    })
+    ->openUrlInNewTab(),
+    
+Action::make('print_all')
+    ->label('Print All Deposits')
+    ->icon('heroicon-o-printer')
+    ->color('info')
+    ->url(function ($livewire) { // Add $livewire here
+        $currentUserId = auth()->id();
+        $currentUser = \App\Models\User::find($currentUserId);
+        
+        // Get active table filters
+        $filters = $livewire->tableFilters; 
 
+        $params = ['filters' => $filters];
+
+        if (!$currentUser->is_admin) {
+            $params['branch_id'] = $currentUser->branch_id;
+        }
+
+        return route('deposits.print_all', $params);
+    })
+    ->openUrlInNewTab(),
                 // Add the Exchange action here
 Action::make('exchange')
     ->label('Currency Exchange')
@@ -249,9 +274,26 @@ Action::make('exchange')
                 ]),
             ])
     ])
-->action(function (array $data): void {
-                    // This is where the storage logic belongs
-                    DB::transaction(function () use ($data) {
+    
+// 1. Hide the default primary button
+    ->modalSubmitAction(false) 
+    
+    // 2. Define both buttons in the footer to control order
+    ->extraModalFooterActions(fn (Action $action): array => [
+        // This button will now be in the "corner" (leftmost)
+        $action->makeModalSubmitAction('saveAndNew', arguments: ['another' => true])
+            ->label('Save & New')
+            ->color('gray'),
+            
+        // This button will be in the "middle" (replaces the old Submit)
+        $action->makeModalSubmitAction('save')
+            ->label('Save')
+            ->color('warning'), // 'warning' matches the yellow color in your screenshot
+    ])
+    
+    // 3. Update signature to include $action, $form, and $arguments
+    ->action(function (array $data, Action $action, $form, array $arguments): void {
+        DB::transaction(function () use ($data) {
                         $reference_no = 'EXR-' . now()->format('ymdhis');
 
                         $references = CashBox::select(['cash_box.*'])->count();
@@ -308,6 +350,12 @@ Action::make('exchange')
                         ->title('Exchange Completed successfully')
                         ->success()
                         ->send();
+                        // Now these variables will work
+     // Check if "Save & New" was clicked
+        if ($arguments['another'] ?? false) {
+            $form->fill(); 
+            $action->halt(); 
+        }
                 }),
             // Your existing New Deposit action
 
@@ -398,7 +446,17 @@ Action::make('exchange')
                         // ROW 4: Description
                         Textarea::make('description')->rows(3)->columnSpanFull(),
                     ])
-                                   ->action(function (array $data) {
+   ->modalSubmitAction(false) //disable default submit
+    ->extraModalFooterActions(fn (Action $action): array => [
+        $action->makeModalSubmitAction('saveAndNew', arguments: ['another' => true])
+            ->label('Save & New')
+            ->color('gray'),
+        $action->makeModalSubmitAction('save')
+            ->label('Save')
+            ->color('warning'), 
+    ])
+    ->action(function (array $data, Action $action, $form, array $arguments) {
+        DB::transaction(function () use ($data) {
                         // Insert into cash_box table
                         $cashBox = CashBox::create([
                             'uid' => 'CBI' . now()->format('ymdhis'),
@@ -435,7 +493,14 @@ Action::make('exchange')
                             'pay_status' =>'Cash'
                         ]);
 
+                        });
                         Notification::make()->title('Deposit Saved')->success()->send();
+                        // Now these variables will work
+                if ($arguments['another'] ?? false) {
+                            // Tip: We keep the branch_id so the user doesn't have to re-select it
+                            $form->fill(['branch_id' => $data['branch_id']]); 
+                            $action->halt(); 
+                        }
                     })
             ])->deferColumnManager(false)
             ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
@@ -470,6 +535,8 @@ Action::make('exchange')
                     })
                     ->searchable()
                     ->columnSpan(2),
+
+
                     SelectFilter::make('status')
                         ->options([
                             'Confirmed' => 'Confirmed',
@@ -982,6 +1049,7 @@ Action::make('exchange')
             }),
                 ])
             ])
+            ->defaultSort('created_at', 'desc') // Change 'desc' to 'asc' if you want oldest first
             ->toolbarActions([
                 BulkActionGroup::make([
 // 1. BULK PENDING

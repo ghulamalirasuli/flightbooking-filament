@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Resources\Deposits\Tables;
+use Illuminate\Support\Facades\Auth;
 
 use Filament\Actions\CreateAction;
 
@@ -80,34 +81,36 @@ class DepositsTable
                 ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
                     
-                TextColumn::make('account.account_name')
-                    ->label('Account')
-                    ->formatStateUsing(function ($record) {
-                        $account = $record->account;
-                        
-                        if (!$account) {
-                            return 'N/A';
-                        }
+               TextColumn::make('from_account')
+    ->label('Account')
+    ->formatStateUsing(function ($state, $record) {
+        // 1. Check if the relationship actually loaded an Account model
+        $account = $record->account;
 
-                        // Accessing data across the three models
-                        $name = $account->account_name; // From Accounts model
-                        $category = $account->accountType?->accounts_category ?? 'No Category'; // From Account_category model
-                        $branch = $account->branch?->branch_name ?? 'No Branch'; // From Branch model
+        if ($account) {
+            // Use your model's custom attribute for the formatted name
+            return $account->account_name_with_category_and_branch;
+        }
 
-                        return "{$name} - {$category} ({$branch})";
-                    })
-                    // Ensure searching still works on the account name and related fields
-                    ->searchable(query: function ($query, string $search) {
-                        $query->whereHas('account', function ($q) use ($search) {
-                            $q->where('account_name', 'like', "%{$search}%")
-                            ->orWhereHas('accountType', fn($inner) => $inner->where('accounts_category', 'like', "%{$search}%"))
-                            ->orWhereHas('branch', fn($inner) => $inner->where('branch_name', 'like', "%{$search}%"));
-                        });
-                    }),
-
-                // TextColumn::make('entry_type')
-                //     ->label('Type')
-                //     ->searchable(),
+        // 2. If no account relationship, return the raw text (e.g., "Exchange Currency")
+        // or a default placeholder if the state is empty
+        return $state ?? 'N/A';
+    })
+    ->searchable(query: function ($query, string $search) {
+        $query->where(function ($q) use ($search) {
+            // Search the raw text field itself (covers "Exchange Currency")
+            $q->where('from_account', 'like', "%{$search}%")
+              // Also search through the relationship if it exists
+              ->orWhereHas('account', function ($sub) use ($search) {
+                  $sub->where('account_name', 'like', "%{$search}%")
+                      ->orWhereHas('accountType', fn($inner) => $inner->where('accounts_category', 'like', "%{$search}%"))
+                      ->orWhereHas('branch', fn($inner) => $inner->where('branch_name', 'like', "%{$search}%"));
+              });
+        });
+    }),
+                TextColumn::make('entry_type')
+                    ->label('Type')
+                    ->searchable()->toggleable(isToggledHiddenByDefault: true),
 
                 // TextColumn::make('amount_from')
                 //     ->label('Amount')
@@ -120,13 +123,13 @@ class DepositsTable
                 // First Column
                 TextColumn::make('debit_display') // Unique identifier
                     ->label('Debit')
-                    ->state(fn ($record): string => $record->currency?->currency_name ?? '') 
+                    ->state(fn ($record): string => $record->currency?->currency_code ?? '') 
                     ->description(fn ($record): string => $record->debit ?? '0'),
 
                 // Second Column
                 TextColumn::make('credit_display') // Unique identifier
                     ->label('Credit')
-                    ->state(fn ($record): string => $record->currency?->currency_name ?? '')
+                    ->state(fn ($record): string => $record->currency?->currency_code ?? '')
                     ->description(fn ($record): string => $record->credit ?? '0'),
 
                 TextColumn::make('status')
@@ -159,28 +162,187 @@ class DepositsTable
                     ->toggleable(isToggledHiddenByDefault: true),
         ])
             ->headerActions([
+        // DepositsTable.php inside headerActions
+Action::make('print_pdf')
+    ->label('Download PDF')
+    ->icon('heroicon-o-arrow-down-tray')
+    ->color('success')
+    ->url(function ($livewire) {
+        $filters = $livewire->tableFilters;
+        return route('deposits.print_all', [
+            'filters' => $filters,
+            'format' => 'pdf' // Add this flag
+        ]);
+    })
+    ->openUrlInNewTab(),
+    
+Action::make('print_all')
+    ->label('Print All Deposits')
+    ->icon('heroicon-o-printer')
+    ->color('info')
+    ->url(function ($livewire) { // Add $livewire here
+        $currentUserId = auth()->id();
+        $currentUser = \App\Models\User::find($currentUserId);
+        
+        // Get active table filters
+        $filters = $livewire->tableFilters; 
 
+        $params = ['filters' => $filters];
+
+        if (!$currentUser->is_admin) {
+            $params['branch_id'] = $currentUser->branch_id;
+        }
+
+        return route('deposits.print_all', $params);
+    })
+    ->openUrlInNewTab(),
                 // Add the Exchange action here
-            Action::make('exchange')
-                ->label('Exchange')
-                ->color('info')
-                ->icon('heroicon-o-arrows-right-left')
-                ->form([
-                    TextInput::make('from_currency')
-                        ->required(),
-                    TextInput::make('to_currency')
-                        ->required(),
-                    TextInput::make('amount')
+Action::make('exchange')
+    ->label('Currency Exchange')
+    ->icon('heroicon-o-arrows-right-left')
+    ->color('info')
+    ->modalWidth(\Filament\Support\Enums\Width::SevenExtraLarge)
+    ->form([
+        Section::make()
+            ->schema([
+                Grid::make(12)->schema([
+                    // 1. Branch Selection
+                    Select::make('branch_id')
+                        ->label('Branch')
+                        ->options(\App\Models\Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->live()
+                        ->required()
+                        ->columnSpan(12),
+
+                    // 2. Sell Currency
+                    Select::make('sell_currency')
+                        ->label('Sell Currency')
+                        ->live()
+                        ->required()
+                        ->options(fn (callable $get) => 
+                            \App\Models\Currency::where('status', true)->pluck('currency_name', 'id')
+                        )
+                        ->columnSpan(4),
+
+                    // 3. Operator (The "Action" in your blade file)
+                    Select::make('divmul')
+                        ->label('Action')
+                        ->options([
+                            'Multiply' => 'Multiply (*)',
+                            'Divide' => 'Divide (/)',
+                        ])
+                        ->default('Multiply')
+                        ->live() // Essential for immediate calculation
+                        ->required()
+                        ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateExchangeAmounts($get, $set))
+                        ->columnSpan(4),
+
+                    // 4. Buy Currency
+                    Select::make('buy_currency')
+                        ->label('Buy Currency')
+                        ->live()
+                        ->required()
+                        ->options(fn (callable $get) => 
+                            \App\Models\Currency::where('status', true)
+                                ->where('id', '!=', $get('sell_currency'))
+                                ->pluck('currency_name', 'id')
+                        )
+                        ->columnSpan(4),
+
+                    // 5. Sell Amount (Debit)
+                    TextInput::make('sell_amount')
+                        ->label('Sell Amount (Debit)')
                         ->numeric()
-                        ->required(),
-                ])
-                ->action(function (array $data) {
+                        ->required()
+                        ->live(onBlur: true) // Calculates when user clicks away or stops typing
+                        ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateExchangeAmounts($get, $set))
+                        ->columnSpan(4),
+
+                    // 6. Rate
+                    TextInput::make('rate')
+                        ->label('Exchange Rate')
+                        ->numeric()
+                        ->default(1)
+                        ->required()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateExchangeAmounts($get, $set))
+                        ->columnSpan(4),
+
+                    // 7. Buy Amount (Credit)
+                    TextInput::make('buy_amount')
+                        ->label('Buy Amount (Credit)')
+                        ->numeric()
+                        ->required()
+                        ->placeholder('Calculated automatically...')
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateReverseExchange($get, $set))
+                        ->columnSpan(4),
+
+                    Textarea::make('description')->columnSpanFull(),
+                ]),
+            ])
+    ])
+    
+->action(function (array $data): void {
+                    // This is where the storage logic belongs
+                    DB::transaction(function () use ($data) {
+                        $reference_no = 'EXR-' . now()->format('ymdhis');
+
+                        $references = CashBox::select(['cash_box.*'])->count();
+        // $code = Branch::where('uid', Auth::guard('web')->user()->branch_id)->first();
+        $code = Branch::where('id',$data['branch_id'])->first();
+        $reference = "EXL".date('ymdhis').$references+1;
+
+        $reference_no = "EXLO".$code->branch_code.date('ymdhis');
+        $uid = "EXLU".$code->branch_code.date('ymdhis');
+
+                        
+                        // 1. STORE THE SELL ENTRY (DEBIT)
+                        CashBox::create([
+                            'uid'           => $uid,
+                            'from_account'  =>'Exchange Currency',
+                            'amount_from'   =>$data['buy_amount'],
+                            'currency_from' =>$data['buy_currency'],
+                            'reference_no'  => $reference_no,
+                            'reference'     => $reference,
+                            'branch_id'     => $data['branch_id'],
+                            'user_id'       => auth()->id(),
+                            'currency_id'   => $data['sell_currency'],
+                            'debit'         => $data['sell_amount'],
+                            'credit'        => 0,
+                            'status'        => "Pending",
+                            'entry_type'    => "Exchange",
+                            'description'   => $data['description'] ?? 'Currency Exchange Sell',
+                            'date_confirm'  => now()->format('Y-m-d'),
+                            'date_update'   => now()->format('Y-m-d'),
+                        ]);
+
+                        // 2. STORE THE BUY ENTRY (CREDIT)
+                        CashBox::create([
+                            'uid'           => $uid,
+                            'from_account'  =>'Exchange Currency',
+                            'amount_from'   =>$data['sell_amount'],
+                            'currency_from' =>$data['sell_currency'],
+                            'reference_no'  => $reference_no,
+                            'reference'     => $reference,
+                            'branch_id'     => $data['branch_id'],
+                            'user_id'       => auth()->id(),
+                            'currency_id'   => $data['buy_currency'],
+                            'debit'         => 0,
+                            'credit'        => $data['buy_amount'],
+                            'status'        => "Pending",
+                            'entry_type'    => "Exchange",
+                            'description'   => $data['description'] ?? 'Currency Exchange Buy',
+                            'date_confirm'  => now()->format('Y-m-d'),
+                            'date_update'   => now()->format('Y-m-d'),
+                        ]);
+                    });
+
                     Notification::make()
-                        ->title('Exchange processed')
+                        ->title('Exchange Completed successfully')
                         ->success()
                         ->send();
                 }),
-
             // Your existing New Deposit action
 
                 Action::make('create_deposit')
@@ -204,16 +366,28 @@ class DepositsTable
                                 ->label('Account')
                                 ->options(function (callable $get) {
                                     $branchId = $get('branch_id');
-                                    return Accounts::query()
+
+                                    return \App\Models\Accounts::query()
+                                        ->with(['accountType', 'branch']) // Eager load for performance
                                         ->where('is_active', true)
                                         ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                                         ->get()
-                                        ->pluck('account_name', 'uid');
+                                        ->mapWithKeys(function ($account) {
+                                            // Using your specific formatting logic
+                                            $name = $account->account_name;
+                                            $category = $account->accountType?->accounts_category ?? 'N/A';
+                                            $branch = $account->branch?->branch_name ?? 'N/A';
+
+                                            return [
+                                                $account->uid => "({$branch}) {$name} - {$category}"
+                                            ];
+                                        });
                                 })
                                 ->live()
-                                ->afterStateUpdated(fn ($set) => $set('currency', null))
-                                ->searchable()
                                 ->required()
+                                // ->helperText('Select the source account for this deposit. Only active accounts for the selected branch are shown.')
+                                ->afterStateUpdated(fn ($set) => $set('currency_id', null))
+                                ->searchable()
                                 ->columnSpan(6),
                         ]),
 
@@ -313,6 +487,13 @@ class DepositsTable
                             ->when($data['date_confirm_until'], fn ($q, $date) => $q->whereDate('date_confirm', '<=', $date));
                     }),
                 TrashedFilter::make()->columnSpan(2),
+                 SelectFilter::make('entry_type')
+                        ->options([
+                            'Debit' => 'Debit',
+                            'Credit' => 'Credit',
+                            'Exchange' => 'Exchange',
+                        ])
+                    ->columnSpan(2),
                 SelectFilter::make('currency_id')
                     ->label('Currency')
                     ->options(function () {
@@ -331,13 +512,7 @@ class DepositsTable
                         ])
                         ->default('Pending')// Sets the default state to Pending
                         ->columnSpan(2),
-                   SelectFilter::make('entry_type')
-                        ->options([
-                            'Debit' => 'Debit',
-                            'Credit' => 'Credit',
-                        ])
-                    ->default('Pending') // Sets the default state to Pending
-                    ->columnSpan(2)
+                  
             ], FiltersLayout::Modal)
             ->deferFilters(false)
             ->filtersFormColumns(12)
@@ -371,7 +546,14 @@ class DepositsTable
             ->visible(fn ($record) => $record->status !== 'Confirmed')
             ->action(function ($record) {
                 // 1. Update the CashBox record
-                $record->update(['status' => 'Confirmed','update_by' => auth()->id()]);
+                // $record->update(['status' => 'Confirmed','update_by' => auth()->id()]); // single row by ID
+                // 1. Update ALL rows in CashBox with this reference number
+            \App\Models\CashBox::where('reference_no', $record->reference_no)
+                ->update([
+                    'status' => 'Confirmed',
+                    'update_by' => auth()->id(),
+                    'date_update' => now()->format('Y-m-d'),
+                ]);
 
                 // 2. Update the related Account Ledger record
                 Account_ledger::where('reference_no', $record->reference_no)
@@ -389,8 +571,14 @@ class DepositsTable
             ->visible(fn ($record) => $record->status !== 'Cancelled')
             ->action(function ($record) {
                 // 1. Update the CashBox record
-                $record->update(['status' => 'Cancelled','update_by' => auth()->id()]);
+                // $record->update(['status' => 'Cancelled','update_by' => auth()->id()]);
 
+                   \App\Models\CashBox::where('reference_no', $record->reference_no)
+                ->update([
+                    'status' => 'Cancelled',
+                    'update_by' => auth()->id(),
+                    'date_update' => now()->format('Y-m-d'),
+                ]);
                 // 2. Update the related Account Ledger record
                 Account_ledger::where('reference_no', $record->reference_no)
                     ->update(['status' => 'Cancelled']);
@@ -406,7 +594,13 @@ class DepositsTable
             ->visible(fn ($record) => $record->status !== 'Pending')
             ->action(function ($record) {
                 // 1. Update the CashBox record
-                $record->update(['status' => 'Pending','update_by' => auth()->id()]);
+                // $record->update(['status' => 'Pending','update_by' => auth()->id()]);
+                   \App\Models\CashBox::where('reference_no', $record->reference_no)
+                ->update([
+                    'status' => 'Pending',
+                    'update_by' => auth()->id(),
+                    'date_update' => now()->format('Y-m-d'),
+                ]);
 
                 // 2. Update the related Account Ledger record
                 Account_ledger::where('reference_no', $record->reference_no)
@@ -424,8 +618,362 @@ class DepositsTable
             ->url(fn ($record) => route('deposits.print', ['record' => $record->id]))
             ->openUrlInNewTab(),
 
-                    ViewAction::make(),
-                    EditAction::make(),
+            // ViewAction::make(), 
+            ViewAction::make()
+    ->modalHeading(fn ($record) => $record->entry_type === 'Exchange' ? 'View Exchange Details' : 'View Deposit Details')
+    ->infolist(function ($record): array {
+        // --- 1. VIEW FOR EXCHANGE TYPE ---
+        if ($record->entry_type === 'Exchange') {
+            // 1. Fetch the paired record (The other side of the exchange)
+            $related = \App\Models\CashBox::where('uid', $record->uid)
+                ->where('id', '!=', $record->id)
+                ->first();
+
+            // 2. Identify which row is Selling (Debit) and which is Buying (Credit)
+            $sellRow = $record->debit > 0 ? $record : $related;
+            $buyRow = $record->credit > 0 ? $record : $related;
+
+            // 3. Calculate Transaction Rate: (Buy Amount / Sell Amount)
+            // This represents the actual rate used during the transaction.
+            $transactionRate = ($sellRow && $buyRow && $sellRow->debit > 0) 
+                ? round($buyRow->credit / $sellRow->debit, 4) 
+                : 0;
+
+            // 4. (Optional) Fetch Official Rate from Currency Table for comparison
+            $officialRate = $sellRow?->currency?->sell_rate ?? 'N/A';
+
+            return [
+                \Filament\Schemas\Components\Section::make('Exchange Information')
+                    ->schema([
+                        \Filament\Schemas\Components\Grid::make(3)->schema([
+                            \Filament\Infolists\Components\TextEntry::make('branch.branch_name')->label('Branch'),
+                            \Filament\Infolists\Components\TextEntry::make('reference_no')->label('Reference'),
+                            \Filament\Infolists\Components\TextEntry::make('status')
+                                ->badge()
+                                ->color(fn ($state) => match ($state) {
+                                    'Confirmed' => 'success',
+                                    'Pending' => 'warning',
+                                    'Cancelled' => 'danger',
+                                    default => 'gray',
+                                }),
+                        ]),
+                        \Filament\Schemas\Components\Grid::make(3)->schema([
+                            \Filament\Infolists\Components\TextEntry::make('sell_info')
+                                ->label('Selling')
+                                ->state(fn() => $sellRow ? "{$sellRow->debit} " . ($sellRow->currency?->currency_name ?? '') : 'N/A')
+                                ->color('danger')
+                                ->weight('bold'),
+                                
+    \Filament\Infolists\Components\TextEntry::make('exchange_rate')
+    ->label('Applied Rate')
+    ->state(function ($record) { // Changed from fn() => { to function ($record) {
+        // 1. Fetch the paired record using the shared UID
+        $related = \App\Models\CashBox::where('uid', $record->uid)
+            ->where('id', '!=', $record->id)
+            ->first();
+
+        if (!$related) return 'N/A';
+
+        // 2. Identify Sell (Debit) and Buy (Credit) amounts
+        $sellAmount = $record->debit > 0 ? $record->debit : $related->debit;
+        $buyAmount = $record->credit > 0 ? $record->credit : $related->credit;
+
+        if ($sellAmount <= 0 || $buyAmount <= 0) return '0';
+
+        // 3. Logic: Divide larger by smaller to get the readable rate (e.g., 66.00)
+        $rate = ($sellAmount > $buyAmount) 
+            ? ($sellAmount / $buyAmount) 
+            : ($buyAmount / $sellAmount);
+
+        return number_format($rate, 2);
+    })
+    ->icon('heroicon-m-arrows-right-left')
+    ->color('info'),
+
+                            \Filament\Infolists\Components\TextEntry::make('buy_info')
+                                ->label('Buying')
+                                ->state(fn() => $buyRow ? "{$buyRow->credit} " . ($buyRow->currency?->currency_name ?? '') : 'N/A')
+                                ->color('success')
+                                ->weight('bold'),
+                        ]),
+                        \Filament\Infolists\Components\TextEntry::make('description')->columnSpanFull(),
+                    ])
+            ];
+        }
+
+        // --- 2. VIEW FOR STANDARD DEPOSIT ---
+        return [
+            \Filament\Schemas\Components\Section::make('Deposit Information')
+                ->schema([
+                    \Filament\Schemas\Components\Grid::make(12)->schema([
+                        \Filament\Infolists\Components\TextEntry::make('branch.branch_name')
+                            ->label('Branch')
+                            ->columnSpan(6),
+                        \Filament\Infolists\Components\TextEntry::make('account_display')
+                            ->label('Account')
+                            ->state(fn ($record) => $record->account?->account_name_with_category_and_branch ?? $record->from_account)
+                            ->columnSpan(6),
+                    ]),
+                    \Filament\Schemas\Components\Grid::make(12)->schema([
+                        \Filament\Infolists\Components\TextEntry::make('entry_type')
+                            ->label('Type')
+                            ->badge()
+                            ->color(fn ($state) => $state === 'Debit' ? 'info' : 'warning')
+                            ->columnSpan(4),
+                        \Filament\Infolists\Components\TextEntry::make('currency.currency_name')
+                            ->label('Currency')
+                            ->columnSpan(4),
+                        \Filament\Infolists\Components\TextEntry::make('amount_from')
+                            ->label('Amount')
+                            ->numeric()
+                            ->weight('bold')
+                            ->columnSpan(4),
+                    ]),
+                    \Filament\Schemas\Components\Grid::make(12)->schema([
+                        \Filament\Infolists\Components\TextEntry::make('reference_no')->label('Reference')->columnSpan(4),
+                        \Filament\Infolists\Components\TextEntry::make('status')
+                            ->badge()
+                            ->color(fn ($state) => match ($state) {
+                                'Confirmed' => 'success',
+                                'Pending' => 'warning',
+                                'Cancelled' => 'danger',
+                                default => 'gray',
+                            })
+                            ->columnSpan(4),
+                        \Filament\Infolists\Components\TextEntry::make('user.name')->label('Created By')->columnSpan(4),
+                    ]),
+                    \Filament\Infolists\Components\TextEntry::make('description')->columnSpanFull(),
+                ])
+        ];
+    }),
+        
+        // EditAction::make()
+        //     ->modalHeading('Edit Deposit'),
+
+       EditAction::make('edit_deposit')
+    ->label('Edit')
+    ->icon('heroicon-m-pencil-square')
+    ->modalHeading('Edit Deposit')
+    ->visible(fn ($record) => $record->entry_type !== 'Exchange')
+    ->form([
+        Section::make('Deposit Details')
+            ->schema([
+                Grid::make(12)->schema([
+                    Select::make('branch_id')
+                        ->label('Branch')
+                        ->options(\App\Models\Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->live()
+                        ->afterStateUpdated(function ($set) {
+                            $set('from_account', null);
+                            $set('currency_id', null);
+                        })
+                        ->columnSpan(6),
+
+                    Select::make('from_account')
+                        ->label('Account')
+                        ->options(function (callable $get, $record) {
+                            // Use state from form, fallback to the record's branch if form state is empty
+                            $branchId = $get('branch_id') ?? $record->branch_id;
+                            
+                            if (!$branchId) return [];
+
+                            return \App\Models\Accounts::query()
+                                ->with(['accountType', 'branch'])
+                                ->where('is_active', true)
+                                ->where('branch_id', $branchId)
+                                ->get()
+                                ->mapWithKeys(function ($account) {
+                                    $name = $account->account_name;
+                                    $category = $account->accountType?->accounts_category ?? 'N/A';
+                                    $branch = $account->branch?->branch_name ?? 'N/A';
+                                    return [$account->uid => "({$branch}) {$name} - {$category}"];
+                                });
+                        })
+                        ->live()
+                        ->required()
+                        ->afterStateUpdated(fn ($set) => $set('currency_id', null))
+                        ->columnSpan(6),
+                ]),
+                Grid::make(12)->schema([
+                    Select::make('entry_type')
+                        ->label('Deposit Type')
+                        ->options(['Debit' => 'Debit', 'Credit' => 'Credit'])
+                        ->required()
+                        ->columnSpan(4),
+
+                    Select::make('currency_id')
+                        ->label('Currency')
+                        ->options(function (callable $get, $record) {
+                            // Use state from form, fallback to the record's account if form state is empty
+                            $accountUid = $get('from_account') ?? $record->from_account;
+                            
+                            if (!$accountUid) return [];
+
+                            $account = \App\Models\Accounts::where('uid', $accountUid)->first();
+                            if (!$account || empty($account->access_currency)) return [];
+
+                            return \App\Models\Currency::whereIn('id', $account->access_currency)
+                                ->where('status', true)
+                                ->pluck('currency_name', 'id');
+                        })
+                        ->required()
+                        ->columnSpan(4),
+
+                    TextInput::make('amount_from')
+                        ->label("Amount")
+                        ->numeric()
+                        ->required()
+                        ->columnSpan(4),
+                ]),
+                Textarea::make('description')->rows(3)->columnSpanFull(),
+            ])
+    ])
+    // Ensure data is saved to both CashBox and Account_ledger
+    ->action(function ($record, array $data): void {
+        \DB::transaction(function () use ($record, $data) {
+            // 1. Update the Deposit Record (CashBox)
+            $record->update([
+                'branch_id'     => $data['branch_id'],
+                'from_account'   => $data['from_account'],
+                'entry_type'     => $data['entry_type'],
+                'currency_id'    => $data['currency_id'],
+                'currency_from'  => $data['currency_id'],
+                'amount_from'    => $data['amount_from'],
+                'debit'          => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
+                'credit'         => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
+                'description'    => $data['description'],
+                'date_update'    => now()->format('Y-m-d'),
+            ]);
+
+            // 2. Update the corresponding Ledger Record
+            \App\Models\Account_ledger::where('reference_no', $record->reference_no)->update([
+                'branch_id'   => $data['branch_id'],
+                'account'     => $data['from_account'],
+                'currency'    => $data['currency_id'],
+                'debit'       => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
+                'credit'      => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
+                'description' => $data['description'],
+                'date_update' => now()->format('Y-m-d'),
+            ]);
+        });
+
+        \Filament\Notifications\Notification::make()
+            ->title('Deposit updated successfully')
+            ->success()
+            ->send();
+    }),
+    // 2. ACTION FOR EXCHANGES
+    EditAction::make('edit_exchange')
+    ->label('Edit')
+    ->icon('heroicon-m-pencil-square')
+    ->modalHeading('Edit Exchange')
+    ->visible(fn ($record) => $record->entry_type === 'Exchange')
+    ->fillForm(function ($record): array {
+        // 1. Fetch the paired record
+        $related = \App\Models\CashBox::where('uid', $record->uid)
+            ->where('id', '!=', $record->id)
+            ->first();
+
+        $sellRow = $record->debit > 0 ? $record : $related;
+        $buyRow = $record->credit > 0 ? $record : $related;
+
+        // 2. Logic: Infer the human-readable rate (e.g., 66.00)
+        // Divide larger amount by smaller amount to match what the user originally typed
+        $sellAmt = $sellRow?->debit ?? 0;
+        $buyAmt = $buyRow?->credit ?? 0;
+        
+        $rate = 1;
+        if ($sellAmt > 0 && $buyAmt > 0) {
+            $rate = ($sellAmt > $buyAmt) ? ($sellAmt / $buyAmt) : ($buyAmt / $sellAmt);
+        }
+
+        return [
+            'branch_id'     => $record->branch_id,
+            'sell_currency' => $sellRow?->currency_id,
+            'buy_currency'  => $buyRow?->currency_id,
+            'sell_amount'   => $sellAmt,
+            'buy_amount'    => $buyAmt,
+            'description'   => $record->description,
+            'rate'          => round($rate, 4),
+            'divmul'        => ($sellAmt > $buyAmt) ? 'Divide' : 'Multiply', // Auto-detect the action
+        ];
+    })
+    ->form([
+        Section::make('Exchange Details')
+            ->schema([
+                Grid::make(12)->schema([
+                    Select::make('branch_id')
+                        ->label('Branch')
+                        ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->live()
+                        ->required()
+                        ->columnSpan(12),
+                    Select::make('sell_currency')
+                        ->label('Sell Currency')
+                        ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
+                        ->live()
+                        ->required()
+                        ->columnSpan(4),
+                    Select::make('divmul')
+                        ->label('Action')
+                        ->options(['Multiply' => 'Multiply (*)', 'Divide' => 'Divide (/)'])
+                        ->live()
+                        ->columnSpan(4),
+                    Select::make('buy_currency')
+                        ->label('Buy Currency')
+                        ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
+                        ->live()
+                        ->required()
+                        ->columnSpan(4),
+                    TextInput::make('sell_amount')
+                        ->label('Sell Amount (Debit)')
+                        ->numeric()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn ($get, $set) => self::updateExchangeAmounts($get, $set))
+                        ->columnSpan(4),
+                    TextInput::make('rate')
+                        ->label('Exchange Rate')
+                        ->numeric()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn ($get, $set) => self::updateExchangeAmounts($get, $set))
+                        ->columnSpan(4),
+                    TextInput::make('buy_amount')
+                        ->label('Buy Amount (Credit)')
+                        ->numeric()
+                        ->columnSpan(4),
+                    Textarea::make('description')->columnSpanFull(),
+                ]),
+            ])
+    ])
+    ->action(function ($record, array $data): void {
+        DB::transaction(function () use ($record, $data) {
+            // 1. Update the Sell side (Debit row)
+            \App\Models\CashBox::where('uid', $record->uid)
+                ->where('debit', '>', 0)
+                ->update([
+                    'branch_id'   => $data['branch_id'],
+                    'currency_id' => $data['sell_currency'],
+                    'debit'       => $data['sell_amount'],
+                    'amount_from' => $data['buy_amount'], // Inverted for exchange logic
+                    'description' => $data['description'],
+                    'update_by'   => auth()->id(),
+                ]);
+
+            // 2. Update the Buy side (Credit row)
+            \App\Models\CashBox::where('uid', $record->uid)
+                ->where('credit', '>', 0)
+                ->update([
+                    'branch_id'   => $data['branch_id'],
+                    'currency_id' => $data['buy_currency'],
+                    'credit'      => $data['buy_amount'],
+                    'amount_from' => $data['sell_amount'], // Inverted for exchange logic
+                    'description' => $data['description'],
+                    'update_by'   => auth()->id(),
+                ]);
+        });
+
+        Notification::make()->title('Exchange Updated Successfully')->success()->send();
+    }),
                    // SYNCED DELETE
         DeleteAction::make()
             ->action(function ($record) {
@@ -595,4 +1143,40 @@ class DepositsTable
                 ]),
             ]);
     }
+
+    /**
+ * Calculates Buy Amount based on Sell Amount and Rate
+ */
+protected static function updateExchangeAmounts(callable $get, callable $set): void
+{
+    $sellAmount = (float) ($get('sell_amount') ?? 0);
+    $rate = (float) ($get('rate') ?? 1);
+    $operator = $get('divmul');
+
+    if ($sellAmount <= 0 || $rate <= 0) return;
+
+    $result = ($operator === 'Multiply') 
+        ? ($sellAmount * $rate) 
+        : ($sellAmount / $rate);
+
+    $set('buy_amount', round($result, 2));
+}
+
+/**
+ * (Optional) Calculates Sell Amount if the user manually types into the Buy Amount field
+ */
+protected static function updateReverseExchange(callable $get, callable $set): void
+{
+    $buyAmount = (float) ($get('buy_amount') ?? 0);
+    $rate = (float) ($get('rate') ?? 1);
+    $operator = $get('divmul');
+
+    if ($buyAmount <= 0 || $rate <= 0) return;
+
+    $result = ($operator === 'Multiply') 
+        ? ($buyAmount / $rate) 
+        : ($buyAmount * $rate);
+
+    $set('sell_amount', round($result, 2));
+}
 }
