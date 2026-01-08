@@ -29,9 +29,9 @@ class AccountLedgerResource extends Resource
 
     protected static ?string $navigationLabel = 'Account Ledger';
 
-    protected static ?string $modelLabel = 'Account Balance';
+    protected static ?string $modelLabel = 'Account Ledger';
     
-    protected static ?string $pluralModelLabel = 'Account Balances';
+    protected static ?string $pluralModelLabel = 'Account Ledgers';
 
     public static function form(Schema $schema): Schema
     {

@@ -24,7 +24,16 @@ class MoneyTransferResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'MoneyTransfer';
+    // protected static ?string $recordTitleAttribute = 'MoneyTransfer';
+
+     protected static ?string $recordTitleAttribute = 'Transfer';
+
+      protected static ?string $navigationLabel = 'Transfer';
+
+    protected static ?string $modelLabel = 'Transfer';
+    
+    protected static ?string $pluralModelLabel = 'Transfers';
+
 
 
     public static function form(Schema $schema): Schema

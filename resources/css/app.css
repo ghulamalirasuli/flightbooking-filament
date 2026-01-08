@@ -1,11 +1,20 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+/* 1. Scan your custom Filament Page logic (PHP files) */
 
+@source "../../app/Filament/**/*.php";
+
+/* 2. Scan your custom Blade views */
+
+@source "../../resources/views/**/*.blade.php";
+
+/* 3. Scan Filament Vendor files (CRITICAL: This fixes the broken layout) */
+
+@source "../../vendor/filament/**/*.blade.php";
+
+/* 4. Scan Laravel core (for things like pagination) */
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 }

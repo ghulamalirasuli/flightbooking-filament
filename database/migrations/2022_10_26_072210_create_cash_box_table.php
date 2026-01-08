@@ -25,7 +25,7 @@ return new class extends Migration
             $table->decimal('debit', $precision = 38, $scale = 2);
             $table->text('description')->nullable();
             $table->string('currency_id');
-            $table->enum('status', ['Confirmed', 'Pending','Deleted','Editted']);
+            $table->enum('status', ['Confirmed', 'Pending','Cancelled']);
             $table->string('entry_type')->nullable();
             $table->string('branch_id');
             $table->string('user_id');

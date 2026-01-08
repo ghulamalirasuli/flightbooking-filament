@@ -16,7 +16,7 @@ class MoneyTransfer extends Model
     use UsesBranchTimezone;
     protected $table = 'money_transfer';
     protected $fillable = ['uid',
-    'branch_id','user_id','account_from','account_to','reference_no','reference','amount_from','amount_to',
+    'branch_id','to_branch','user_id','account_from','account_to','reference_no','reference','amount_from','amount_to',
     'currency_from','currency_to','description','comission','status','date_confirm','date_update','update_by'
     ];
 

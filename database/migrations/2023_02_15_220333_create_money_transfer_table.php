@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('uid');
             $table->string('branch_id');
+            $table->string('to_branch')->nullable();
             $table->string('user_id');
             $table->string('reference_no');
             $table->string('reference');
@@ -28,7 +29,7 @@ return new class extends Migration
             $table->string('currency_to');
             $table->text('description')->nullable();
             $table->string('comission')->nullable();;
-            $table->enum('status', ['Confirmed', 'Pending','Deleted','Editted'])->default('Pending');
+            $table->enum('status', ['Confirmed', 'Pending','Cancelled'])->default('Pending');
             $table->date('date_confirm', $precision = 0);
             $table->date('date_update', $precision = 0);
             $table->string('update_by')->nullable();
