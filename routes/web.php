@@ -8,12 +8,21 @@ use App\Http\Controllers\admin\AccountLedgerPrintController;
 
 // Top of web.php
 use App\Http\Controllers\admin\DepositPrintController;
+use App\Http\Controllers\admin\MTPrintController;
 
 //1--- The route using invoke function
 // Route::get('/admin/deposits/print/{ids}', DepositPrintController::class)
 //     ->name('deposits.print')
 //     ->middleware(['auth']);
 //2-- uisng normal controller
+
+Route::get('/admin/transfer/print/{record}', [MTPrintController::class, 'print'])
+    ->name('transfer.print')->middleware(['auth']);
+
+Route::get('/admin/transfer/printall', [MTPrintController::class, 'print_all'])
+    ->name('transfer.print_all')
+    ->middleware(['auth']);
+
 
 // Route for Printing
 Route::get('/admin/deposits/print/{record}', [DepositPrintController::class, 'print'])

@@ -22,11 +22,9 @@ return new class extends Migration
             $table->string('reference_no');
             $table->string('reference');
             $table->string('account_from');
-            $table->decimal('amount_from', $precision = 38, $scale = 2);
-            $table->string('currency_from');
             $table->string('account_to');
-            $table->decimal('amount_to', $precision = 38, $scale = 2);
-            $table->string('currency_to');
+            $table->decimal('amount', $precision = 38, $scale = 2);
+            $table->string('currency');
             $table->text('description')->nullable();
             $table->string('comission')->nullable();;
             $table->enum('status', ['Confirmed', 'Pending','Cancelled'])->default('Pending');

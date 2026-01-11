@@ -29,7 +29,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Split;
-use Filament\Forms\Components\Group;
+use Filament\Schemas\Components\Group;
 
 use Filament\Tables\Table;
 use Filament\Tables\Enums\ColumnManagerResetActionPosition;
@@ -54,6 +54,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\Placeholder;
+use Illuminate\Support\HtmlString;
 
 class DepositsTable
 {
@@ -194,8 +196,9 @@ Action::make('exchange')
     ->icon('heroicon-o-arrows-right-left')
     ->color('info')
     ->modalWidth(\Filament\Support\Enums\Width::SevenExtraLarge)
-    ->form([
+    ->form([ 
         Section::make()
+        // ----------------- Exchange Form-----------
             ->schema([
                 Grid::make(12)->schema([
                     // 1. Branch Selection
@@ -363,9 +366,12 @@ Action::make('exchange')
                     ->label('New Deposit')
                     ->icon('heroicon-o-plus')
                     ->modalHeading('New Deposit')
+                     // --------------- Deposit Form---------
                     ->form([
+                       
                         // ROW 1: Branch and Date
                         Grid::make(12)->schema([
+                             
                             Select::make('branch_id')
                                 ->label('Branch')
                                 ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
@@ -376,6 +382,8 @@ Action::make('exchange')
                                 })
                                 ->searchable()
                                 ->columnSpan(6),
+
+                                 Group::make([
                                 Select::make('from_account')
                                 ->label('Account')
                                 ->options(function (callable $get) {
@@ -401,9 +409,18 @@ Action::make('exchange')
                                 ->required()
                                 // ->helperText('Select the source account for this deposit. Only active accounts for the selected branch are shown.')
                                 ->afterStateUpdated(fn ($set) => $set('currency_id', null))
-                                ->searchable()
-                                ->columnSpan(6),
-                        ]),
+                                ->searchable(),
+                                
+
+                                  Placeholder::make('from_balance_preview')
+                                ->hiddenLabel()
+                                ->visible(fn ($get) => filled($get('from_account'))) // Fixes the empty space issue
+                                ->content(fn ($get) => view('filament.components.account-balance-table', [
+                                    'accountUid' => $get('from_account')
+                                ])),
+                        ])->columnSpan(6),
+                    ]),
+                      
 
                         // ROW 2: Account and Currency (DEPENDENT)
                         Grid::make(12)->schema([
@@ -504,6 +521,7 @@ Action::make('exchange')
                     })
             ])->deferColumnManager(false)
             ->columnManagerResetActionPosition(ColumnManagerResetActionPosition::Footer)
+    // -------------- Filters------------
             ->filters([
              Filter::make('date_range')
                     ->schema([

@@ -62,9 +62,9 @@ class MoneyTransferResource extends Resource
     {
         return [
             'index' => ListMoneyTransfers::route('/'),
-            'create' => CreateMoneyTransfer::route('/create'),
-            'view' => ViewMoneyTransfer::route('/{record}'),
-            'edit' => EditMoneyTransfer::route('/{record}/edit'),
+            // 'create' => CreateMoneyTransfer::route('/create'),
+            // 'view' => ViewMoneyTransfer::route('/{record}'),
+            // 'edit' => EditMoneyTransfer::route('/{record}/edit'),
         ];
     }
 
