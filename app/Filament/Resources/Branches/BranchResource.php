@@ -27,7 +27,7 @@ class BranchResource extends Resource
     protected static string | UnitEnum | null $navigationGroup = 'CMS';
 
 
-    protected static ?string $recordTitleAttribute = 'Branch';
+    protected static ?string $recordTitleAttribute = 'branch_name';
 
     public static function form(Schema $schema): Schema
     {

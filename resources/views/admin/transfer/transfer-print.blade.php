@@ -157,25 +157,39 @@
                 <div class="transaction-card shadow-sm">
                     <div class="row align-items-center">
                         <div class="col-7">
-                            <span class="data-label d-block">From Account</span>
+                            <span class="data-label d-block">From</span>
                             <h6 class="fw-bold mb-0" style="font-size: 13px;">
                                 {{ $record->accountFrom?->account_name_with_category_and_branch ?? 'Exchange' }}
                             </h6>
-                    <span class="data-label d-block">To Account</span>
+                        </div>
+                        <div class="col-5 border-start ps-3">
+                            <div>
+                                <span class="data-label d-block">{{ $ledger->pay_status ?? 'Cash' }} Amount</span>
+                                <span class="fw-bold text-primary" style="font-size: 14px;">
+                                    {{ $record->mtcurrency?->currency_code }} {{ number_format($record->amount, 2) }}
+                                    <small class="text-dark"> Creditted</small>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                           
+                </div>
+
+
+                <div class="transaction-card shadow-sm">
+                       <div class="row align-items-center">
+                        <div class="col-7">
+                            <span class="data-label d-block">To</span>
                             <h6 class="fw-bold mb-0" style="font-size: 13px;">
                                 {{ $record->accountTo?->account_name_with_category_and_branch ?? 'Exchange' }}
                             </h6>
                         </div>
                         <div class="col-5 border-start ps-3">
-                            {{-- <div class="mb-1">
-                                <span class="data-label">Type:</span>
-                                <span class="badge bg-primary py-1 px-2" style="font-size: 8px;">{{ $record->entry_type }}</span>
-                            </div> --}}
                             <div>
-                                <span class="data-label d-block">Amount</span>
+                                <span class="data-label d-block"> {{ $ledger->pay_status ?? 'Cash' }} Amount</span>
                                 <span class="fw-bold text-primary" style="font-size: 14px;">
                                     {{ $record->mtcurrency?->currency_code }} {{ number_format($record->amount, 2) }}
-                                    <small class="text-dark">({{ $ledger->pay_status ?? 'Cash' }})</small>
+                                    <small class="text-dark">   Debitted </small>
                                 </span>
                             </div>
                         </div>

@@ -26,7 +26,7 @@ class AccountsResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
     protected static string | UnitEnum | null $navigationGroup = 'Account Management';
 
-    protected static ?string $recordTitleAttribute = 'Accounts';
+    protected static ?string $recordTitleAttribute = 'account_name';
 
     public static function form(Schema $schema): Schema
     {

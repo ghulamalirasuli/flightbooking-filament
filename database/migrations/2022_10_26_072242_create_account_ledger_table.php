@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('credit', $precision = 38, $scale = 2)->nullable();
             $table->decimal('debit', $precision = 38, $scale = 2)->nullable();
             $table->string('currency');
-            $table->enum('status', ['Confirmed', 'Pending','Deleted','Editted','Reserved','Cancelled']);
+            $table->enum('status', ['Confirmed', 'Pending','Reserved','Cancelled']);
             $table->string('branch_id');
             $table->string('user_id'); 
             $table->string('service_id')->nullable();

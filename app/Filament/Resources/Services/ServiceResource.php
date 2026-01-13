@@ -53,7 +53,7 @@ class ServiceResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected static string | UnitEnum | null $navigationGroup = 'CMS';
 
-    protected static ?string $recordTitleAttribute = 'Service';
+    protected static ?string $recordTitleAttribute = 'title';
 
     public static function form(Schema $schema): Schema
     {

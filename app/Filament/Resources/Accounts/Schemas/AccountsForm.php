@@ -8,8 +8,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Split;
 use Filament\Forms\Components\Group;
 use Filament\Support\Enums\Operation;
@@ -24,7 +24,8 @@ class AccountsForm
     {
         return $schema
             ->components([
-                
+                //    Section::make('Account form') // white card background
+                //     ->schema([
                 Select::make('branch_id') // Binds to the correct foreign key column
                     ->label('Branch')
                     ->relationship('branch', 'id') // Keep 'id' as the second argument to ensure the ID is stored
@@ -91,6 +92,7 @@ class AccountsForm
                     ->preload()
                     ->required()
                     ->helperText('Choose the account type this account will use.'),
+                    //  ])->columnSpanFull(),// to make form max in width
             ]);
     }
 }

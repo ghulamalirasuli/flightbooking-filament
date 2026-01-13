@@ -39,7 +39,7 @@ class CurrencyResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
     protected static string | UnitEnum | null $navigationGroup = 'CMS';
 
-    protected static ?string $recordTitleAttribute = 'Currency';
+    protected static ?string $recordTitleAttribute = 'currency_name';
 
     public static function form(Schema $schema): Schema
     {

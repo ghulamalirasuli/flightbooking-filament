@@ -24,8 +24,6 @@ class DepositResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'Deposit';
-
       protected static ?string $navigationLabel = 'Deposit';
 
     protected static ?string $modelLabel = 'Deposit';

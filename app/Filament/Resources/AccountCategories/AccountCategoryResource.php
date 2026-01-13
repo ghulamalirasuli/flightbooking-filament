@@ -41,7 +41,7 @@ class AccountCategoryResource extends Resource
     protected static string | UnitEnum | null $navigationGroup = 'CMS';
 
 
-    protected static ?string $recordTitleAttribute = 'Account Category';
+    protected static ?string $recordTitleAttribute = 'accounts_category';
     protected static ?string $navigationLabel = 'Account Category';
 
     protected static ?string $createButtonLabel = 'New Account Category';

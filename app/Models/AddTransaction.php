@@ -16,12 +16,10 @@ class AddTransaction extends Model
     use UsesBranchTimezone;
     protected $table = 'transaction';
     
-    protected $fillable = ['uid',
-        'branch_id', 'user_id', 'account_from', 'account_to', 'reference_no', 'reference','default_currency',
-        'fullname', 'email', 'Contact_name', 'mobile_number', 'tracking', 'fixed_price', 'sold_price', 'profit',
-        'description', 'depart_date', 'arrival_date', 'from_currency', 'to_currency', 'service_type','service_content', 'status',
-        'pay_status', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind', 'update_by', 'account_category_id',
-        'doc_type','doc_tracking','doc_status','doc_label','doc_process','username','doc_number','delivery_date'
+    protected $fillable = ['uid', 'reference_no', 'reference','branch_id','to_branch', 'user_id', 'account_from', 'account_to','fixed_price', 'sold_price', 'profit',
+    'from_currency', 'to_currency','default_currency', 'service_type','service_content','description',
+    'fullname', 'doc_type','doc_status','doc_number',
+    'depart_date', 'arrival_date', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind','delivery_date', 'update_by','status','pay_status'
     ];
 
     public function branch()
