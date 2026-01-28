@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Accounts; // Set this as the primary model
 use App\Models\Account_ledger as AccountLedger;
+use UnitEnum;
 
 use App\Filament\Resources\AccountLedgers\RelationManagers\AccountLedgersRelationManager;
 
@@ -25,7 +26,10 @@ class AccountLedgerResource extends Resource
 {
    protected static ?string $model = Accounts::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?int $navigationSort = 1;
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-bangladeshi';
+    protected static string | UnitEnum | null $navigationGroup = 'Account Ledger';
 
     protected static ?string $navigationLabel = 'Account Ledger';
 

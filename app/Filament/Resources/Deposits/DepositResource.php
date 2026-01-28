@@ -17,12 +17,16 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use UnitEnum;
 
 class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?int $navigationSort = 1;
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
+    protected static string | UnitEnum | null $navigationGroup = 'Deposits';
 
       protected static ?string $navigationLabel = 'Deposit';
 

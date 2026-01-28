@@ -54,8 +54,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 use Filament\Notifications\Notification;
-use Filament\Forms\Components\Placeholder;
-use Illuminate\Support\HtmlString;
+use Filament\Forms\Components\Placeholder;// Like Ajax show and hide content
+use Illuminate\Support\HtmlString;// Like Ajax show and hide content
 
 class DepositsTable
 {

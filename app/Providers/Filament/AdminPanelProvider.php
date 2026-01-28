@@ -36,9 +36,20 @@ class AdminPanelProvider extends PanelProvider
             ->spa(true)
                ->navigationGroups([
                 'Account Management', // The group you want first
-                'CMS',      // The group you want second
-                // Add any other groups here in their desired order
+                'Account Ledger',
+                'Transactions',
+                'Deposits',
+                'Flight Setting',
+                'CMS',     
             ])
+//             ->navigationGroups([
+//     NavigationGroup::make('Account Management')->collapsed(),
+//     NavigationGroup::make('Account Ledger')->collapsed(),
+//     NavigationGroup::make('Transactions')->collapsed(),
+//     NavigationGroup::make('Deposits')->collapsed(),
+//     NavigationGroup::make('Flight Setting')->collapsed(),
+//     NavigationGroup::make('CMS')->collapsed(),
+// ])
             //  ->sidebarCollapsibleOnDesktop()
             ->sidebarFullyCollapsibleOnDesktop()
             ->databaseNotifications() // Ensure this line is present

@@ -17,22 +17,30 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use UnitEnum;
+
+use App\Filament\Resources\Transactions\RelationManagers\BatchRecordsRelationManager;
+
 
 class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?int $navigationSort = 1;
 
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-square-3-stack-3d';
+    protected static string | UnitEnum | null $navigationGroup = 'Transactions';
 
-      protected static ?string $navigationLabel = 'Transaction';
+    protected static ?string $recordTitleAttribute = 'reference_no';
+    protected static ?string $navigationLabel = 'Transaction';
 
     protected static ?string $modelLabel = 'Transaction';
     
     protected static ?string $pluralModelLabel = 'Transaction';
 
 
-    public static function form(Schema $schema): Schema
+
+  public static function form(Schema $schema): Schema
     {
         return TransactionForm::configure($schema);
     }
@@ -50,7 +58,7 @@ class TransactionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+              BatchRecordsRelationManager::class,
         ];
     }
 
@@ -64,11 +72,16 @@ class TransactionResource extends Resource
         ];
     }
 
-    public static function getRecordRouteBindingEloquentQuery(): Builder
-    {
-        return parent::getRecordRouteBindingEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
-    }
+    // App\Filament\Resources\Transactions\TransactionResource.php
+
+public static function getRecordRouteBindingEloquentQuery(): Builder
+{
+    // This allows the "View" page to work even if the record is soft-deleted
+    // and prepares the query for the reference_no lookup.
+    return parent::getRecordRouteBindingEloquentQuery()
+        ->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+}
+
 }

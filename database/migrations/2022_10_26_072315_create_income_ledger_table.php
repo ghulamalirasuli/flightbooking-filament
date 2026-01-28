@@ -26,7 +26,7 @@ return new class extends Migration
             $table->decimal('credit', $precision = 38, $scale = 2);
             $table->decimal('debit', $precision = 38, $scale = 2);
             $table->string('currency');
-            $table->enum('status', ['Confirmed', 'Pending','Deleted','Editted'])->default('Pending');
+            $table->enum('status', ['Confirmed', 'Pending','Cancelled'])->default('Pending');
             $table->date('date_confirm', $precision = 0);
             $table->date('date_update', $precision = 0);
             $table->softDeletes();

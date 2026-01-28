@@ -24,12 +24,15 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Notifications\Notification;
+use UnitEnum;
 
 class DocTypeResource extends Resource
 {
     protected static ?string $model = DocType::class;
+    protected static ?int $navigationSort = 5;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document';
+    protected static string | UnitEnum | null $navigationGroup = 'CMS';
 
     protected static ?string $recordTitleAttribute = 'doctype';
 

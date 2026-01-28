@@ -14,7 +14,7 @@ class ContactInfo extends Model
     protected $table = 'contact_info';
 
     protected $fillable = [
-        'uid','reference_no','branch_id','user_id','fullname','slug','email','mobile_number'
+        'uid','reference_no','branch_id','user_id','fullname','email','mobile_number'
     ];
 
     /* ---------- RELATIONSHIPS ---------- */

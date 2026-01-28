@@ -22,14 +22,19 @@ class AddTransaction extends Model
     'depart_date', 'arrival_date', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind','delivery_date', 'update_by','status','pay_status'
     ];
 
+    public function updated_by()
+   {
+     return $this->belongsTo(User::class, 'update_by', 'id');
+  }
+
     public function branch()
     {
-        return $this->belongsTo(Branch::class, 'branch_id', 'uid');
+        return $this->belongsTo(Branch::class, 'branch_id', 'id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'uid');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function accountFrom()
@@ -44,13 +49,19 @@ class AddTransaction extends Model
 
     public function currencyFrom()
     {
-        return $this->belongsTo(Currency::class, 'from_currency', 'uid');
+        return $this->belongsTo(Currency::class, 'from_currency', 'id');
     }
 
     public function currencyTo()
     {
-        return $this->belongsTo(Currency::class, 'to_currency', 'uid');
+        return $this->belongsTo(Currency::class, 'to_currency', 'id');
     }
+
+      public function profitCurrency()
+    {
+        return $this->belongsTo(Currency::class, 'default_currency', 'id');
+    }
+
 
     public function service()
     {
@@ -63,4 +74,33 @@ class AddTransaction extends Model
     }
 
     public function tasks() { return $this->hasMany(TaskManage::class, 'transaction_ref', 'reference_no'); }
+
+// -------------------- Part to fetch records based on reference_no --------------------
+/*
+This is set in TransactionResource's getPages() method
+in stead of below line as below line takes just single record by id
+'view' => ViewTransaction::route('/{record}'),
+*/
+public function getRouteKeyName(): string
+{
+    return 'reference_no';
+}
+
+/**
+ * Fetch all transactions belonging to the same batch/reference_no
+ */
+public function batchRecords()
+{
+    return $this->hasMany(AddTransaction::class, 'reference_no', 'reference_no');
+}
+
+/**
+ * Fetch contact info tied to this batch
+ */
+public function contactInfo()
+{
+    return $this->hasOne(ContactInfo::class, 'reference_no', 'reference_no');
+}
+
+// -------------------- End Part to fetch records based on reference_no --------------------
 }

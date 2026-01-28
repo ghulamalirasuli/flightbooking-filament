@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('branch_id');
             $table->string('user_id');
             $table->string('fullname')->nullable();
-            $table->string('slug')->unique()->nullable();
             $table->string('email')->nullable();
             $table->bigInteger('mobile_number')->nullable();
             $table->tinyInteger('status')->default(1);

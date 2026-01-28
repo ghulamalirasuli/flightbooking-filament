@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Transactions\Schemas;
 use App\Models\Accounts;
 use App\Models\Branch;
 use App\Models\Currency;
+use App\Models\DocType;
 use App\Models\Service;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -235,12 +236,12 @@ class TransactionForm
                                                 Grid::make(12)
                                                     ->schema([
                                                         TextInput::make('doc_number')->columnSpan(3),
-                                                        Select::make('doc_type')
-                                                            ->options([
-                                                                'Passport' => 'Passport',
-                                                                'NID' => 'NID',
-                                                                'Bank' => 'Bank',
-                                                            ])->columnSpan(3),
+                                                        Select::make('doctype')
+                                                            ->label('Doc Type')
+                                                            ->options(DocType::where('status', true)->pluck('doctype', 'id'))
+                                                            ->searchable()
+                                                            ->required()
+                                                            ->columnSpan(3),
 
                                                         Select::make('from_currency')
                                                             ->label('From Currency')

@@ -26,12 +26,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Notifications\Notification;
+use UnitEnum;
 
 class DocStatusResource extends Resource
 {
     protected static ?string $model = DocStatus::class;
+    protected static ?int $navigationSort = 6;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    // protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document-check';
+    protected static string | UnitEnum | null $navigationGroup = 'CMS';
+    
 
     protected static ?string $recordTitleAttribute = 'docstatus';
 

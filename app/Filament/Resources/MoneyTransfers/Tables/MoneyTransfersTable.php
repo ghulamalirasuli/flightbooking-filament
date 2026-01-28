@@ -30,6 +30,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\Split;
 use Filament\Schemas\Components\Group;
+use Filament\Forms\Components\Placeholder;
 
 use Filament\Tables\Table;
 use Filament\Tables\Enums\ColumnManagerResetActionPosition;
@@ -38,7 +39,6 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Enums\FiltersResetActionPosition;
-use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Builder;
 
 use Filament\Tables\Columns\IconColumn;
@@ -53,11 +53,13 @@ use App\Models\User;
 use App\Models\MoneyTransfer;
 
 use Illuminate\Database\Eloquent\Collection;
+
+use Filament\Support\Enums\Width;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Facades\DB;
 
 use Filament\Notifications\Notification;
-use Filament\Forms\Components\Placeholder;
-use Illuminate\Support\HtmlString;
+
 
 class MoneyTransfersTable
 {
@@ -68,7 +70,7 @@ class MoneyTransfersTable
                 TextColumn::make('index')
                     ->label('#')
                     ->rowIndex(),
-      TextColumn::make('user.name')
+                TextColumn::make('user.name')
                 // ->label('User / Inserted At')
                 ->label('Inserted')
                 ->description(fn ($record): string => $record->created_at?->format('M d, Y H:i') ?? 'N/A')

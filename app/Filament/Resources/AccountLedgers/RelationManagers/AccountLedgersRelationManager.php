@@ -52,7 +52,7 @@ class AccountLedgersRelationManager extends RelationManager
 {
     protected static string $relationship = 'accountLedgers';
 
-    public function isReadOnly(): bool
+    public function isReadOnly(): bool // Disable read-only mode (to see action buttons)
     {
         return false;
     }
