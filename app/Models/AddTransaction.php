@@ -22,6 +22,20 @@ class AddTransaction extends Model
     'depart_date', 'arrival_date', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind','delivery_date', 'update_by','status','pay_status'
     ];
 
+    // In ContactInfo.php
+// protected static function boot()
+// {
+//     parent::boot();
+    
+//     static::creating(function ($model) {
+//         // Optional: Limit max contacts per transaction
+//         $existing = static::where('reference_no', $model->reference_no)->count();
+//         if ($existing >= 10) {
+//             throw new \Exception('Maximum 10 contacts allowed per transaction');
+//         }
+//     });
+// }
+
     public function updated_by()
    {
      return $this->belongsTo(User::class, 'update_by', 'id');
@@ -101,6 +115,23 @@ public function contactInfo()
 {
     return $this->hasOne(ContactInfo::class, 'reference_no', 'reference_no');
 }
+/**
+ * Fetch all contact info tied to this batch
+ */
+public function contactInfos()
+{
+    return $this->hasMany(ContactInfo::class, 'reference_no', 'reference_no');
+}
 
 // -------------------- End Part to fetch records based on reference_no --------------------
+/**
+ * Fetch all comments tied to this batch by reference_no
+ */
+/**
+ * Fetch all comments tied to this batch by reference_no
+ */
+public function comments()
+{
+    return $this->hasMany(Comments::class, 'reference_no', 'reference_no');
+}
 }

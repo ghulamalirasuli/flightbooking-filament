@@ -20,7 +20,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use UnitEnum;
 
 use App\Filament\Resources\Transactions\RelationManagers\BatchRecordsRelationManager;
-
+use App\Filament\Resources\Transactions\RelationManagers\TransactionAccountRelationManager;
+use App\Filament\Resources\Transactions\RelationManagers\TransactionCommentsRelationManager;
 
 class TransactionResource extends Resource
 {
@@ -59,6 +60,8 @@ class TransactionResource extends Resource
     {
         return [
               BatchRecordsRelationManager::class,
+              TransactionAccountRelationManager::class,
+              TransactionCommentsRelationManager::class,
         ];
     }
 

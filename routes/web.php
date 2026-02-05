@@ -9,6 +9,7 @@ use App\Http\Controllers\admin\AccountLedgerPrintController;
 // Top of web.php
 use App\Http\Controllers\admin\DepositPrintController;
 use App\Http\Controllers\admin\MTPrintController;
+use App\Http\Controllers\admin\TransactionPrintController;
 
 //1--- The route using invoke function
 // Route::get('/admin/deposits/print/{ids}', DepositPrintController::class)
@@ -40,6 +41,12 @@ Route::get('/admin/account_ledger/ledger-print/{ownerId}', [AccountLedgerPrintCo
 Route::get('/admin/account_ledger/send-email/{ownerId}', [AccountLedgerPrintController::class, 'sendEmail'])
     ->name('account_ledger.send_email')
     ->middleware(['web', 'auth']);
+
+Route::get('/admin/transactions/print_from/{reference_no}/{account_id}/{currency_id}', [TransactionPrintController::class, 'print_from'])
+    ->name('transactions.print_from')->middleware(['auth']);
+
+    Route::get('/admin/transactions/print_to/{reference_no}/{account_id}/{currency_id}', [TransactionPrintController::class, 'print_to'])
+    ->name('transactions.print_to')->middleware(['auth']);
 
 
 

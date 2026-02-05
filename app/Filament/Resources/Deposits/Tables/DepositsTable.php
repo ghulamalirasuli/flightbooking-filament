@@ -118,13 +118,13 @@ class DepositsTable
                 TextColumn::make('debit_display') // Unique identifier
                     ->label('Debit')
                     ->state(fn ($record): string => $record->currency?->currency_code ?? '') 
-                    ->description(fn ($record): string => $record->debit ?? '0'),
+                    ->description(fn ($record): string => $record->debit ?? '0')->searchable('debit'),
 
                 // Second Column
                 TextColumn::make('credit_display') // Unique identifier
                     ->label('Credit')
                     ->state(fn ($record): string => $record->currency?->currency_code ?? '')
-                    ->description(fn ($record): string => $record->credit ?? '0'),
+                    ->description(fn ($record): string => $record->credit ?? '0')->searchable('credit'),
 
                 TextColumn::make('status')
                     ->label('Status')

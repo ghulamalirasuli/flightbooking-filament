@@ -19,10 +19,15 @@ return new class extends Migration
             $table->string('branch_id');
             $table->string('user_id');
             $table->string('reference_no');
+            $table->string('account')->nullable();
+            $table->string('type')->default('Remark');
+            $table->string('reminder')->default('no');
+            $table->string('visibility')->default('internal');
             $table->string('subject')->nullable();
             $table->string('slug')->unique()->nullable();
             $table->string('comments')->nullable();
-            $table->date('date_comment');
+            $table->dateTime('date_comment');
+            $table->string('updated_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('contact_info', function (Blueprint $table) {
             $table->id();
             $table->string('uid');
-            $table->string('reference_no')->nullable()->unique();
+            $table->string('reference_no')->nullable();
             $table->string('branch_id');
             $table->string('user_id');
             $table->string('fullname')->nullable();

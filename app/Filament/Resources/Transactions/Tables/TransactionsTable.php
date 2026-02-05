@@ -44,6 +44,8 @@ use App\Models\Branch;
 use App\Models\CashBox;
 use App\Models\AddTransaction;
 use App\Models\Service;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 
 use Filament\Notifications\Notification;
 
@@ -122,16 +124,83 @@ class TransactionsTable
                         return "{$date} By {$userName}";
                     }),
 
-                    TextColumn::make('profit') // Unique identifier
-
-                    ->label('Profit')
-
-                    ->state(fn ($record): string => $record->profitCurrency?->currency_code ?? '')
-
-                    ->description(fn ($record): string => $record->profit ?? '0')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-              
+    //      TextColumn::make('profit')
+    // ->label('Profit')
+    // ->formatStateUsing(function ($record) {
+    //     return number_format($record->profit ?? 0, 2)
+    //         . '<br><span class="text-gray-500 text-sm">'
+    //         . ($record->profitCurrency?->currency_code ?? '-')
+    //         . '</span>';
+    // })
+    // ->html()
+    // ->summarize(
+    //     Summarizer::make()
+    //         ->label('Total Profit')
+    //         ->using(function ($query): array {
+    //             // Get the sum
+    //             $total = $query->sum('profit');
+                
+    //             // Get distinct currencies in the current filtered set
+    //             $currencyIds = $query->clone()
+    //                 ->select('default_currency')
+    //                 ->distinct()
+    //                 ->pluck('default_currency');
+                
+    //             // If all records use the same currency, display it
+    //             if ($currencyIds->count() === 1 && $currencyIds->first()) {
+    //                 $currency = Currency::find($currencyIds->first())?->currency_code ?? '-';
+    //             } else {
+    //                 // Mixed currencies or no currency
+    //                 $currency = $currencyIds->isEmpty() ? '-' : 'Mixed';
+    //             }
+                
+    //             return [
+    //                 'total' => $total,
+    //                 'currency' => $currency,
+    //             ];
+    //         })
+    //         ->formatStateUsing(fn (array $state): string => 
+    //             number_format($state['total'], 2) . ' ' . $state['currency']
+    //         )
+    // ),
+    TextColumn::make('profit')
+    ->label('Profit')
+    ->formatStateUsing(function ($record) {
+        return number_format($record->profit ?? 0, 2)
+            . '<br><span class="text-gray-500 text-sm">'
+            . ($record->profitCurrency?->currency_code ?? '-')
+            . '</span>';
+    })
+    ->html()
+    ->summarize(
+    Summarizer::make()
+        ->label('Total Profit')
+        ->using(function ($query): array {
+            $total = $query->sum('profit');
+            
+            // Get distinct non-null currencies only
+            $currencyIds = $query->clone()
+                ->whereNotNull('default_currency')
+                ->distinct()
+                ->pluck('default_currency');
+            
+            if ($currencyIds->count() === 1) {
+                $currency = \App\Models\Currency::find($currencyIds->first())?->currency_code ?? '-';
+            } elseif ($currencyIds->isEmpty()) {
+                $currency = '-'; // No currency set
+            } else {
+                $currency = 'Mixed';
+            }
+            
+            return [
+                'total' => $total,
+                'currency' => $currency,
+            ];
+        })
+        ->formatStateUsing(fn (array $state): string => 
+            number_format($state['total'], 2) . ' ' . $state['currency']
+        )
+)->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('deleted_at')
                     ->dateTime()

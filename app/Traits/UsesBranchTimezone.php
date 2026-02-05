@@ -52,9 +52,13 @@ trait UsesBranchTimezone
         // Log::info('UsesBranchTimezone: Carbon Time in Branch Timezone: ' . $nowInBranchTimezone->toDateTimeString() . ' (' . $nowInBranchTimezone->timezoneName . ')');
 
         // ... (rest of your existing code for setting date_comment, date_confirm, date_update, created_at, updated_at)
-        if (isset($this->attributes['date_comment'])) {
-            $this->date_comment = $nowInBranchTimezone->format('Y-m-d');
-        }
+        // if (isset($this->attributes['date_comment'])) {
+        //     $this->date_comment = $nowInBranchTimezone->format('Y-m-d H:i:s');
+        // }
+if (isset($this->attributes['date_comment']) && empty($this->date_comment)) {
+    $this->date_comment = $nowInBranchTimezone->format('Y-m-d H:i:s');
+}
+
         // if (isset($this->attributes['date_confirm'])) {
         //     $this->date_confirm = $nowInBranchTimezone->format('Y-m-d');
         // }

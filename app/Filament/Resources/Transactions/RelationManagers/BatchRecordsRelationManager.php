@@ -73,17 +73,17 @@ class BatchRecordsRelationManager extends RelationManager
 {
     protected static string $relationship = 'batchRecords';
 
-    protected static ?string $title = 'Related Items (Same Reference)';
+    protected static ?string $title = 'Transactions';
 
      public function isReadOnly(): bool // Disable read-only mode (to see action buttons)
     {
         return false;
     }
 
-    protected function getTableHeading(): string
-{
-    return 'Transactions (' . $this->getBatchCurrency() . ')';
-}
+//     protected function getTableHeading(): string
+// {
+//     return 'Transactions (' . $this->getBatchCurrency() . ')';
+// }
 
 protected function getBatchCurrency(): string
 {
