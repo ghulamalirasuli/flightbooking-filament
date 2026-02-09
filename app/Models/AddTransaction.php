@@ -19,7 +19,7 @@ class AddTransaction extends Model
     protected $fillable = ['uid', 'reference_no', 'reference','branch_id','to_branch', 'user_id', 'account_from', 'account_to','fixed_price', 'sold_price', 'profit',
     'from_currency', 'to_currency','default_currency', 'service_type','service_content','description',
     'fullname', 'doc_type','doc_status','doc_number',
-    'depart_date', 'arrival_date', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind','delivery_date', 'update_by','status','pay_status'
+    'depart_date', 'arrival_date', 'from_remarks', 'to_remarks', 'date_confirm', 'date_update','date_remind','delivery_date', 'update_by','status','from_pay_status','to_pay_status','pnr'
     ];
 
     // In ContactInfo.php

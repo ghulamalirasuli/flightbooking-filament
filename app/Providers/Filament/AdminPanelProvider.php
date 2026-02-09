@@ -52,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
 // ])
             //  ->sidebarCollapsibleOnDesktop()
             ->sidebarFullyCollapsibleOnDesktop()
+            ->authGuard('web') // 👈 MUST MATCH notifications
             ->databaseNotifications() // Ensure this line is present
         ->databaseNotificationsPolling('30s')// 30 seconds
 

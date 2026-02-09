@@ -1,4 +1,4 @@
-@props(['accountUid'])
+@props(['accountUid', 'dateRange' => 'alltime', 'fromDate' => null, 'toDate' => null])
 
 @php
     $account = \App\Models\Accounts::where('uid', $accountUid)->first();
@@ -6,6 +6,8 @@
 
     if ($account) {
         $allCurrencies = \App\Models\Currency::all();
+        
+        // NO DATE FILTERING - Get full balance
         $ledgerData = \App\Models\Account_ledger::where('account', $account->uid)
             ->select('currency', 'status', \Illuminate\Support\Facades\DB::raw('SUM(credit) - SUM(debit) as balance'))
             ->groupBy('currency', 'status')
@@ -36,12 +38,11 @@
                 </tr>
             </thead>
             <tbody style="background-color: white;">
-                @foreach($unifiedBalances  as $index => $item)
-
+                @foreach($unifiedBalances as $index => $item)
                     <tr style="border-bottom: 1px solid #f3f4f6;">
-                         <td style="padding: 12px 24px; text-align: left; font-size: 14px; color: #9ca3af;">
-                        {{ $index + 1 }}.
-                    </td>
+                        <td style="padding: 12px 24px; text-align: left; font-size: 14px; color: #9ca3af;">
+                            {{ $index + 1 }}.
+                        </td>
                         <td style="padding: 10px 20px; text-align: left; font-size: 13px; font-weight: bold; color: #111827;">
                             {{ $item['name'] }}
                         </td>
@@ -52,23 +53,31 @@
                                     class="h-4 w-4 text-gray-400 group-hover:text-primary-500 inline"
                                 />
                             </a>
-
                         </td>
                         <td style="padding: 10px 20px; text-align: left; font-family: monospace; font-size: 13px; font-weight: bold; color: {{ $item['confirmed'] >= 0 ? '#16a34a' : '#dc2626' }};">
-                          <a target="_blank" href="{{ route('account_ledger.print', ['ownerId' => $account->uid]) }}?filters[currency][value]={{ $item['id'] }}&filters[status][value]=Confirmed">
-                            {{ number_format($item['confirmed'], 2) }} {{ $item['code'] }}
-                          </a>
+                            <a target="_blank" href="{{ route('account_ledger.print', ['ownerId' => $account->uid]) }}?filters[currency][value]={{ $item['id'] }}&filters[status][value]=Confirmed&filters[date_range][date_confirm_from]={{ $fromDate }}&filters[date_range][date_confirm_until]={{ $toDate }}">
+                                {{ number_format($item['confirmed'], 2) }} {{ $item['code'] }}
+                            </a>
                         </td>
                         <td style="padding: 10px 20px; text-align: left; font-family: monospace; font-size: 13px; font-weight: bold; color: #d97706;">
-                            
-                        <a target="_blank" href="{{ route('account_ledger.print', ['ownerId' => $account->uid]) }}?filters[currency][value]={{ $item['id'] }}&filters[status][value]=Pending">
-                      
-                            {{ number_format($item['pending'], 2) }} {{ $item['code'] }}
-                        </a>
+                            <a target="_blank" href="{{ route('account_ledger.print', ['ownerId' => $account->uid]) }}?filters[currency][value]={{ $item['id'] }}&filters[status][value]=Pending&filters[date_range][date_confirm_from]={{ $fromDate }}&filters[date_range][date_confirm_until]={{ $toDate }}">
+                                {{ number_format($item['pending'], 2) }} {{ $item['code'] }}
+                            </a>
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+        
+        @if($dateRange !== 'alltime')
+            <div style="padding: 10px 20px; background-color: #f3f4f6; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
+                <strong>Note:</strong> Balances shown are for all time. When printing, the ledger will be filtered for 
+                @if($dateRange === 'year')
+                    this year ({{ date('Y') }})
+                @elseif($dateRange === 'month')
+                    this month ({{ date('F Y') }})
+                @endif
+            </div>
+        @endif
     </div>
 @endif

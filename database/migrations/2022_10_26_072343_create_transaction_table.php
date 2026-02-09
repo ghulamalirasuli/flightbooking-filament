@@ -51,11 +51,11 @@ return new class extends Migration
             $table->text('from_remarks')->nullable();
             $table->text('to_remarks')->nullable();
 
-            $table->string('pay_status')->nullable();// PAID OR UNPAID
+            $table->string('from_pay_status')->nullable();// PAID OR UNPAID
+            $table->string('to_pay_status')->nullable();
             $table->enum('status', ['Confirmed', 'Pending','Cancelled'])->default('Pending');
-
+            $table->string('pnr')->nullable();
             $table->string('update_by')->nullable();
-
             $table->date('date_confirm', $precision = 0);
             $table->date('date_update', $precision = 0);
 

@@ -134,6 +134,7 @@ class TransactionInfolist
                                             ->action(function (array $data, $record) {
                                                 // Get UID from the hidden form field, not from $record
                                                 $contactUid = $data['contact_uid'];
+                                                 $data['update_by'] = auth()->id();
 
                                                 // Remove the hidden field from update data
                                                 unset($data['contact_uid']);
@@ -171,23 +172,7 @@ class TransactionInfolist
                                     ])
                                     ->columns(12)
                                     ->schema([
-                                            TextEntry::make('fullname')
-                                                ->label('Fullname')
-                                                ->weight(FontWeight::SemiBold)
-                                                ->columnSpan(3),
-
-                                            TextEntry::make('email')
-                                                ->label('Email')
-                                                ->icon('heroicon-m-envelope')
-                                                ->copyable()
-                                                ->columnSpan(3),
-
-                                            TextEntry::make('mobile_number')
-                                                ->label('Mobile Number')
-                                                ->icon('heroicon-m-phone')
-                                                ->copyable()
-                                                ->columnSpan(3),
-                                            TextEntry::make('inserted_by') // Change name to avoid dot notation confusion
+                                           TextEntry::make('inserted_by') // Change name to avoid dot notation confusion
                                             ->label('Inserted')
                                             ->state(fn ($record) => is_array($record) 
                                                 ? ($record['user']['name'] ?? 'System')
@@ -200,6 +185,37 @@ class TransactionInfolist
                                                     
                                                 $date = $createdAt 
                                                     ? \Carbon\Carbon::parse($createdAt)->format('M d, Y H:i') 
+                                                    : '-';
+                                                    
+                                                return "{$state}<br><span style='color: #6b7280; font-size: 0.75rem;'>{$date}</span>";
+                                            })
+                                            ->html()
+                                            ->columnSpan(3),
+                                            TextEntry::make('email')
+                                                ->label('Email')
+                                                ->icon('heroicon-m-envelope')
+                                                ->copyable()
+                                                ->columnSpan(3),
+
+                                            TextEntry::make('mobile_number')
+                                                ->label('Mobile Number')
+                                                ->icon('heroicon-m-phone')
+                                                ->copyable()
+                                                ->columnSpan(3),
+                                       
+                                                     TextEntry::make('update_by') // Change name to avoid dot notation confusion
+                                            ->label('Updated')
+                                            ->state(fn ($record) => is_array($record) 
+                                                ? ($record['updated_by']['name'] ?? '')
+                                                : ($record->updated_by?->name ?? '')
+                                            )
+                                            ->formatStateUsing(function ($state, $record) {
+                                                $updatedAt = is_array($record) 
+                                                    ? ($record['updated_at'] ?? null) 
+                                                    : $record->updated_at;
+                                                    
+                                                $date = $updatedAt 
+                                                    ? \Carbon\Carbon::parse($updatedAt)->format('M d, Y H:i') 
                                                     : '-';
                                                     
                                                 return "{$state}<br><span style='color: #6b7280; font-size: 0.75rem;'>{$date}</span>";

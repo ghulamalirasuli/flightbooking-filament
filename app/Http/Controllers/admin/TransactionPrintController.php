@@ -12,6 +12,7 @@ use App\Models\Currency;
 use App\Models\Branch;
 use App\Models\Service;
 use App\Models\Accounts;
+use App\Models\Comments;
 
 class TransactionPrintController extends Controller
 {
@@ -88,6 +89,11 @@ class TransactionPrintController extends Controller
 
     $services = Service::where('status', true)->get();
 
+    $remarks = Comments::where('reference_no', $reference_no)
+        ->where('type', 'Remark')
+        ->where('visibility', '!=', 'internal')
+        ->get();
+
     return view('admin.transaction.print_from', compact(
         'settings', 
         'record',
@@ -102,7 +108,8 @@ class TransactionPrintController extends Controller
         'totalCredit',
         'totalDebit',
         'balance',
-        'services'
+        'services',
+        'remarks'
     ));
 }
 

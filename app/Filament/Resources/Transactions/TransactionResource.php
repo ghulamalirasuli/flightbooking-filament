@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transactions;
 
+use Filament\Resources\Resource;
 use App\Filament\Resources\Transactions\Pages\CreateTransaction;
 use App\Filament\Resources\Transactions\Pages\EditTransaction;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
@@ -10,14 +11,20 @@ use App\Filament\Resources\Transactions\Schemas\TransactionForm;
 use App\Filament\Resources\Transactions\Schemas\TransactionInfolist;
 use App\Filament\Resources\Transactions\Tables\TransactionsTable;
 use App\Models\AddTransaction as Transaction;
-use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
+
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model; // ✅ Add this import
+
 use UnitEnum;
+use BackedEnum;
+
+use Illuminate\Contracts\Support\Htmlable; // ✅ Add this for return type
 
 use App\Filament\Resources\Transactions\RelationManagers\BatchRecordsRelationManager;
 use App\Filament\Resources\Transactions\RelationManagers\TransactionAccountRelationManager;
@@ -32,6 +39,7 @@ class TransactionResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-square-3-stack-3d';
     protected static string | UnitEnum | null $navigationGroup = 'Transactions';
 
+    //1->
     protected static ?string $recordTitleAttribute = 'reference_no';
     protected static ?string $navigationLabel = 'Transaction';
 
@@ -39,7 +47,12 @@ class TransactionResource extends Resource
     
     protected static ?string $pluralModelLabel = 'Transaction';
 
-
+//2--->
+// Override this method to use multiple fields
+public static function getGloballySearchableAttributes(): array
+{
+    return ['reference_no', 'fullname'];
+}
 
   public static function form(Schema $schema): Schema
     {

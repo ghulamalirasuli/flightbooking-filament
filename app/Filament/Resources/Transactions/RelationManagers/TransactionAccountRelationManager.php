@@ -37,6 +37,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 
@@ -130,10 +131,7 @@ class TransactionAccountRelationManager extends RelationManager
                     ->form([
  // ROW 1: Branch and Date
                         Grid::make(12)->schema([
-
-                                 Group::make([
-                     
-                                  Select::make('from_account')
+            Select::make('from_account')
                 ->label('Related Account')
                 ->options(function (RelationManager $livewire): array {
                     // Get the owner record (single transaction record)
@@ -184,11 +182,19 @@ class TransactionAccountRelationManager extends RelationManager
                 )
                 ->searchable()
                 ->required()
-                ->columnSpanFull()
+                ->columnSpan(8)
                 ->helperText('All accounts involved in this transaction batch'),
 
-                        ])->columnSpan(12),
-                    ]),
+                 Select::make('pay_status')
+                                ->label('Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(4),
+
+                    ])->columnSpanFull(),
                       
 
                         // ROW 2: Account and Currency (DEPENDENT)
@@ -205,7 +211,7 @@ class TransactionAccountRelationManager extends RelationManager
                        Select::make('currency_id')
                                 ->label('Currency')
                                 ->options(function (callable $get) {
-                                    $accountUid = $get('account');
+                                    $accountUid = $get('from_account');
                                     if (!$accountUid) return [];
                                     
                                     $account = Accounts::where('uid', $accountUid)->first();
@@ -247,8 +253,8 @@ class TransactionAccountRelationManager extends RelationManager
                                 'credit'        => $data['entry_type'] === 'Credit' ? $data['amount'] : 0,
                                 'debit'         => $data['entry_type'] === 'Debit' ? $data['amount'] : 0,
                                 'user_id'       => auth()->id(),
-                                // 'branch_id' => auth()->user()->branch_id ?? 1,
-                                'branch_id'     => $data['branch_id'],
+                                'branch_id' => auth()->user()->branch_id ?? 1,
+                                // 'branch_id'     => $data['branch_id'],
                                 'description'   => $data['description'],
                                 'entry_type'    => $data['entry_type'],
                                 'status'        => 'Pending',
@@ -267,10 +273,10 @@ class TransactionAccountRelationManager extends RelationManager
                             'debit'         => $data['entry_type'] === 'Debit' ? $data['amount'] : 0,
                             'currency'      => $data['currency_id'],
                             'user_id'       => auth()->id(),
-                            'branch_id'     => $data['branch_id'],
+                            'branch_id'     => auth()->user()->branch_id ?? 1,
                             'date_confirm'  => now()->format('Y-m-d'),
                             'date_update'   => now()->format('Y-m-d'),
-                            'pay_status'    =>'Cash'
+                            'pay_status'    => $data['pay_status']
                         ]);
                         \Log::info('Ledger created: ' . ($ledger->id ?? 'FAILED'));
                         });
@@ -286,42 +292,7 @@ class TransactionAccountRelationManager extends RelationManager
                     ->modalHeading('Create Money Transfer')
                     ->modalWidth('4xl')
                     ->form([
-                        Grid::make(12)->schema([
-                                    // 1. FROM BRANCH
-                                    Select::make('branch_id')
-                                        ->label('From Branch')
-                                        ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
-                                        ->live()
-                                        ->afterStateUpdated(function ($set) {
-                                            $set('account_from', null);
-                                            $set('to_branch', null); // Reset To Branch if From changes
-                                            $set('account_to', null);
-                                        })
-                                        ->searchable()
-                                        ->required()
-                                        ->columnSpan(6),
-
-                                    // 2. TO BRANCH (Excludes the selected From Branch)
-                                    Select::make('to_branch')
-                                        ->label('To Branch')
-                                        ->options(function (callable $get) {
-                                            // $fromBranch = $get('branch_id');
-                                            return Branch::where('status', true)
-                                                // ->when($fromBranch, fn ($q) => $q->where('id', '!=', $fromBranch)) // Exclude Kabul if selected in From
-                                                ->pluck('branch_name', 'id');
-                                        })
-                                        ->live()
-                                        ->afterStateUpdated(fn ($set) => $set('account_to', null))
-                                        ->searchable()
-                                        ->required()
-                                        ->columnSpan(6),
-                                ])->columnSpanFull(),
-
-
-                       Grid::make(12)->schema([
-                                    // --- FROM ACCOUNT COLUMN ---
-                                    Group::make([
-                                       Select::make('from_account')
+                        Select::make('account_from')
                 ->label('Related Account')
                 ->options(function (RelationManager $livewire): array {
                     // Get the owner record (single transaction record)
@@ -375,17 +346,46 @@ class TransactionAccountRelationManager extends RelationManager
                 ->columnSpanFull()
                 ->helperText('All accounts involved in this transaction batch'),
 
+                        Grid::make(12)->schema([
+                            Select::make('deposit_type')
+                                ->label('Deposit Type')
+                                ->options([
+                                    'Debit' => 'Debit',
+                                    'Credit' => 'Credit',
+                                ])->required()->columnSpan(4),
 
-                                        Placeholder::make('from_balance_preview')
-                                            ->hiddenLabel()
-                                            ->visible(fn ($get) => filled($get('account_from'))) // Fixes the empty space issue
-                                            ->content(fn ($get) => view('filament.components.account-balance-table', [
-                                                'accountUid' => $get('account_from'),
-                                            ])),
-                                    ])->columnSpan(6),
+                            TextInput::make('amount')
+                                        ->numeric()
+                                        ->required()
+                                        ->columnSpan(4),
 
-                                    // --- TO ACCOUNT COLUMN ---
-                                    Group::make([
+                            Select::make('currency')
+                                ->label('Currency')
+                                ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
+                                ->required()
+                                ->columnSpan(4),
+
+                        ])->columnSpanFull(),
+                        
+                        Textarea::make('description')
+                                  ->columnSpanFull()
+                                  ->rows(2),
+
+                       Grid::make(12)->schema([
+                                      Select::make('to_branch')
+                                        ->label('To Branch')
+                                        ->options(function (callable $get) {
+                                            // $fromBranch = $get('branch_id');
+                                            return Branch::where('status', true)
+                                                // ->when($fromBranch, fn ($q) => $q->where('id', '!=', $fromBranch)) // Exclude Kabul if selected in From
+                                                ->pluck('branch_name', 'id');
+                                        })
+                                        ->live()
+                                        ->afterStateUpdated(fn ($set) => $set('account_to', null))
+                                        ->searchable()
+                                        ->required()
+                                        ->columnSpan(6),
+
                                         Select::make('account_to')
                                             ->label('To Account')
                                             ->live() // Added live() so the preview shows up instantly
@@ -395,7 +395,6 @@ class TransactionAccountRelationManager extends RelationManager
                                                 if (! $toBranchId) {
                                                     return [];
                                                 }
-
                                                 return \App\Models\Accounts::query()
                                                     ->with(['accountType', 'branch'])
                                                     ->where('is_active', true)
@@ -407,32 +406,8 @@ class TransactionAccountRelationManager extends RelationManager
                                                     });
                                             })
                                             ->searchable()
-                                            ->required(),
-
-                                        Placeholder::make('to_balance_preview')
-                                            ->hiddenLabel()
-                                            ->visible(fn ($get) => filled($get('account_to'))) // Fixes the empty space issue
-                                            ->content(fn ($get) => view('filament.components.account-balance-table', [
-                                                'accountUid' => $get('account_to'),
-                                            ])),
-                                    ])->columnSpan(6),
-                                ])->columnSpanFull(),
-
-                                Grid::make(12)->schema([
-                                    TextInput::make('amount')
-                                        ->numeric()
-                                        ->required()
-                                        ->columnSpan(3),
-
-                                    Select::make('currency')
-                                        ->label('Currency')
-                                        ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
-                                        ->required()
-                                        ->columnSpan(3),
-
-                                    Textarea::make('description')
-                                        ->columnSpan(6)
-                                        ->rows(2),
+                                            ->required()->columnSpan(6),
+                           
                                 ])->columnSpanFull(),
                     ])
                     ->action(function (array $data) {
@@ -441,7 +416,7 @@ class TransactionAccountRelationManager extends RelationManager
 
                         MoneyTransfer::create([
                                 'uid' => 'M'.now()->format('ymdhis'),
-                                'branch_id' => $data['branch_id'],
+                                'branch_id'     => auth()->user()->branch_id ?? 1,
                                 // 'branch_id' => auth()->user()->branch_id ?? 1,
                                 'to_branch' => $data['to_branch'],
                                 'user_id' => auth()->id(),
@@ -457,6 +432,24 @@ class TransactionAccountRelationManager extends RelationManager
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                             ]);
+                            // After creating the MoneyTransfer record, we can create the corresponding Account_ledger entries for both accounts
+                            $deposit_type = $data['deposit_type'];
+                            if($deposit_type === 'Credit') {
+                                $creditAmount = $data['amount'];
+                                $debitAmount = 0;
+
+                                $acreditAmount = 0;
+                                $adebitAmount = $data['amount'];
+
+                            } else {
+                                $creditAmount = 0;
+                                $debitAmount = $data['amount'];
+
+                                $acreditAmount = $data['amount'];
+                                $adebitAmount = 0;
+                            }
+
+
                             // ------------ From----------
                             Account_ledger::create([
                                 'uid' => 'M'.now()->format('ymdhis'),
@@ -464,11 +457,11 @@ class TransactionAccountRelationManager extends RelationManager
                                 'reference_no' => $record->reference_no,
                                 'reference' => 'MT'.now()->format('ymdhis'),
                                 'description' => $data['description'],
-                                'credit' => $data['amount'],
-                                'debit' => 0,
+                                'credit' => $creditAmount,
+                                'debit' => $debitAmount,
                                 'currency' => $data['currency'],
                                 'user_id' => auth()->id(),
-                                'branch_id' => $data['branch_id'],
+                                'branch_id' => auth()->user()->branch_id ?? 1,
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',
@@ -481,11 +474,12 @@ class TransactionAccountRelationManager extends RelationManager
                                 'reference_no' => $record->reference_no,
                                 'reference' => 'MT'.now()->format('ymdhis'),
                                 'description' => $data['description'],
-                                'credit' => 0,
-                                'debit' => $data['amount'],
+                                'credit' => $acreditAmount,
+                                'debit' => $adebitAmount,
                                 'currency' => $data['currency'],
                                 'user_id' => auth()->id(),
-                                'branch_id' => $data['to_branch'],
+                                // 'branch_id' => $data['to_branch'],
+                                'branch_id'     => auth()->user()->branch_id ?? 1,
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',

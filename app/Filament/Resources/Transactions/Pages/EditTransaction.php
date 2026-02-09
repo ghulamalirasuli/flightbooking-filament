@@ -65,7 +65,9 @@ class EditTransaction extends EditRecord
                 'depart_date' => $data['depart_date'],
                 'arrival_date' => $data['arrival_date'],
                 'delivery_date' => $data['delivery_date'],
-                'pay_status' => 'Unpaid',
+                'from_pay_status' => $data['from_pay_status'],
+                'to_pay_status' => $data['to_pay_status'],
+                'pnr' => $data['pnr'],
                 'date_update' => now(),
                 'update_by' => Auth::id(),
             ]);
@@ -80,6 +82,7 @@ class EditTransaction extends EditRecord
                     'currency' => $data['from_currency'],
                     'branch_id' => $data['branch_id'],
                     'date_update' => now(),
+                    'pay_status' => $data['from_pay_status'],
                 ]);
 
             // Update TO Account Ledger (debit side)
@@ -92,6 +95,7 @@ class EditTransaction extends EditRecord
                     'currency' => $data['to_currency'],
                     'branch_id' => $data['branch_id'],
                     'date_update' => now(),
+                    'pay_status' => $data['to_pay_status'],
                 ]);
 
             // Update Income/Expense entry

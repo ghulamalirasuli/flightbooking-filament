@@ -108,7 +108,27 @@ class TransactionEditForm
                                     ->required()
                                     ->columnSpan(6),
                                 ])->columnSpanFull(),
+                            Grid::make(12)
+                            ->schema([
+                                Select::make('from_pay_status')
+                                ->label('From Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
 
+                                  Select::make('to_pay_status')
+                                  ->label('To Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
+                                  ])
+                            ->columnSpanFull(),
                                 Grid::make(12)->schema([
                                     // 5. SERVICE (Options based on Branch active_services)
                                     Select::make('service_type')
@@ -131,7 +151,8 @@ class TransactionEditForm
                                         ->afterStateUpdated(function ($state, $set) {
                                             $set('service_content', Service::find($state)?->content ?? '');
                                         })
-                                        ->columnSpan(6),
+                                        ->columnSpan(3),
+                                         TextInput::make('pnr')->columnSpan(3),
 
                                     // Hidden Service Content
                                     TextInput::make('service_content')

@@ -15,7 +15,7 @@ use Filament\Forms\Contracts\HasForms;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use BackedEnum;
-use Filament\Support\Icons\Heroicon;
+use Carbon\Carbon;
 
 class AccountBalance extends Page implements HasForms
 {
@@ -62,52 +62,98 @@ class AccountBalance extends Page implements HasForms
                             ->required()
                             ->searchable()
                             ->live(),
-                    ])->columns(2)
+
+                        Select::make('date_range')
+                            ->label('Date Range')
+                            ->options([
+                                'alltime' => 'All Time',
+                                'year' => 'This Year',
+                                'month' => 'This Month',
+                            ])
+                            ->required()
+                            ->default('alltime')
+                            ->live()
+                    ])->columns(3)
             ])
             ->statePath('data');
+    }
+
+    /**
+     * Get date range based on selection
+     */
+    private function getDateRange()
+    {
+        $dateRange = $this->data['date_range'] ?? 'alltime';
+        
+        switch ($dateRange) {
+            case 'year':
+                $fromDate = Carbon::now()->startOfYear()->format('Y-m-d');
+                $toDate = Carbon::now()->endOfYear()->format('Y-m-d');
+                break;
+                
+            case 'month':
+                $fromDate = Carbon::now()->startOfMonth()->format('Y-m-d');
+                $toDate = Carbon::now()->endOfMonth()->format('Y-m-d');
+                break;
+                
+            case 'alltime':
+            default:
+                $fromDate = null;
+                $toDate = null;
+                break;
+        }
+        
+        return [
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'rangeLabel' => $dateRange
+        ];
     }
 
     /**
      * Computed property to get unified data for the table
      */
     public function getUnifiedBalancesProperty()
-{
-    $accountId = $this->data['selectedAccount'] ?? null;
-    if (!$accountId) return collect();
+    {
+        $accountId = $this->data['selectedAccount'] ?? null;
+        if (!$accountId) return collect();
 
-    $account = Accounts::find($accountId);
-    if (!$account) return collect();
+        $account = Accounts::find($accountId);
+        if (!$account) return collect();
 
-    $allCurrencies = Currency::all();
-    
-    $ledgerData = Account_ledger::where('account', $account->uid)
-        ->select('account', 'currency', 'status', DB::raw('SUM(credit) - SUM(debit) as balance'))
-        // Add 'account' to the groupBy here:
-        ->groupBy('account', 'currency', 'status') 
-        ->get();
+        $allCurrencies = Currency::all();
+        
+        // NO DATE FILTERING HERE - Always get full balance
+        $ledgerData = Account_ledger::where('account', $account->uid)
+            ->select('account', 'currency', 'status', DB::raw('SUM(credit) - SUM(debit) as balance'))
+            ->groupBy('account', 'currency', 'status') 
+            ->get();
 
-    return $allCurrencies->map(function ($currency) use ($ledgerData) {
-        return [
-            'id' => $currency->id,
-            'name' => $currency->currency_name,
-            'code' => $currency->currency_code,
-            'confirmed' => $ledgerData->where('currency', $currency->id)->where('status', 'Confirmed')->first()?->balance ?? 0,
-            'pending' => $ledgerData->where('currency', $currency->id)->where('status', 'Pending')->first()?->balance ?? 0,
-        ];
-    });
-}
-
+        return $allCurrencies->map(function ($currency) use ($ledgerData) {
+            return [
+                'id' => $currency->id,
+                'name' => $currency->currency_name,
+                'code' => $currency->currency_code,
+                'confirmed' => $ledgerData->where('currency', $currency->id)->where('status', 'Confirmed')->first()?->balance ?? 0,
+                'pending' => $ledgerData->where('currency', $currency->id)->where('status', 'Pending')->first()?->balance ?? 0,
+            ];
+        });
+    }
 
     public function render(): \Illuminate\Contracts\View\View
-{
-    return view($this->view, [
-        'selectedAccountUid' => $this->data['selectedAccount'] ?? null,
-        'unifiedBalances' => $this->unifiedBalances, 
-    ])
-    ->layout('filament-panels::components.layout.index', [
-        'title' => 'Account Balance', // This forces the title into the layout
-    ]); 
-}
-
-
+    {
+        $dateRange = $this->getDateRange();
+        
+        return view($this->view, [
+            'selectedAccountUid' => $this->data['selectedAccount'] ?? null,
+            'unifiedBalances' => $this->unifiedBalances,
+            'dateRange' => $this->data['date_range'] ?? 'alltime',
+            'fromDate' => $dateRange['fromDate'],
+            'toDate' => $dateRange['toDate'],
+            'rangeLabel' => $dateRange['rangeLabel']
+        ])
+        ->layout('filament-panels::components.layout.index', [
+            'title' => 'Account Balance',
+        ]); 
+    }
 }

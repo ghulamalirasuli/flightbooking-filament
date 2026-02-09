@@ -16,11 +16,12 @@ class Comments extends Model
 
     protected $fillable = [
         'uid', 'subject', 'slug', 'reference_no', 'user_id', 'branch_id',
-        'comments', 'date_comment','type', 'reminder', 'visibility','account','updated_by'
+        'comments', 'date_comment','type', 'reminder', 'visibility','account','updated_by','reminder_notified'
     ];
 
 protected $casts = [
     'date_comment' => 'datetime',
+    'reminder_notified' => 'boolean',
 ];
 
     protected static function boot()

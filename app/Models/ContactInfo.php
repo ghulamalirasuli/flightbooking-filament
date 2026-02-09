@@ -14,11 +14,15 @@ class ContactInfo extends Model
     protected $table = 'contact_info';
 
     protected $fillable = [
-        'uid','reference_no','branch_id','user_id','fullname','email','mobile_number'
+        'uid','reference_no','branch_id','user_id','fullname','email','mobile_number','updated_by'
     ];
 
     /* ---------- RELATIONSHIPS ---------- */
 
+     public function updated_by()
+   {
+     return $this->belongsTo(User::class, 'update_by', 'id');
+  }
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id', 'id');

@@ -15,6 +15,7 @@ use App\Models\Account_ledger;
 use App\Models\Income_expense;
 use App\Models\Currency;
 use App\Models\Service;
+use App\Models\Branch;
 use App\Models\AddTransaction; // Ensure this is imported to use static::getModel() safely or use the class directly
 
 class CreateTransaction extends CreateRecord
@@ -35,9 +36,10 @@ class CreateTransaction extends CreateRecord
                 'mobile_number' => $data['mobile_number'] ?? null,
                 'email'         => $data['email'] ?? null,
             ];
+            $branch_code = Branch::where('id',  $data['branch_id'] )->value('branch_code');
 
             // Generate ONE shared Reference Number for the whole batch
-            $batchReferenceNo = 'TRF' . now()->format('ymdHis') . strtoupper(Str::random(9));
+            $batchReferenceNo = 'TRF'.$branch_code . now()->format('ymdHis') . strtoupper(Str::random(6));
             
             // Common IDs
             $userId = Auth::id();
@@ -108,7 +110,9 @@ class CreateTransaction extends CreateRecord
                     'arrival_date'     => $data['arrival_date'] ?? null,
                     'delivery_date'    => $data['delivery_date'] ?? null,
                     'status'           => 'Pending',
-                    'pay_status'       => 'Unpaid',
+                    'from_pay_status'  => $data['from_pay_status'] ?? null,
+                    'to_pay_status'    => $data['to_pay_status'] ?? null,
+                    'pnr'              => $data['pnr'] ?? null,
                     'date_confirm'     => now(),
                     'date_update'      => now(),
                 ];
@@ -136,6 +140,7 @@ class CreateTransaction extends CreateRecord
                     'branch_id'     => $record->branch_id,
                     'date_confirm'  => now(),
                     'service_id'    => $record->service_type, 
+                    'pay_status'     => $data['from_pay_status'] ?? null,
                 ]);
 
                 // Ledger: TO Account
@@ -153,6 +158,7 @@ class CreateTransaction extends CreateRecord
                     'branch_id'     => $record->branch_id,
                     'date_confirm'  => now(),
                     'service_id'    => $record->service_type, 
+                    'pay_status'     => $data['to_pay_status'] ?? null,
                 ]);
 
                 // Ledger: Income Expense (Cost/Profit Tracking)

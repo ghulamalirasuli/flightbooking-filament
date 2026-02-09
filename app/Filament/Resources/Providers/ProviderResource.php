@@ -3,8 +3,7 @@
 namespace App\Filament\Resources\Providers;
 
 use App\Filament\Resources\Providers\Pages\ManageProviders;
-use App\Models\Provider;
-use BackedEnum;
+
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -27,12 +26,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Accounts;
+use App\Models\Provider;
+use BackedEnum;
+use UnitEnum;
 
 class ProviderResource extends Resource
 {
     protected static ?string $model = Provider::class;
+    protected static ?int $navigationSort = 4;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string | UnitEnum | null $navigationGroup = 'Flight Setting';
 
     protected static ?string $recordTitleAttribute = 'account_uid';
 

@@ -85,8 +85,9 @@ class TransactionsTable
                 ->description(function ($record) {
                     $amount = $record->fixed_price ?? '0';
                     $currency = $record->currencyFrom?->currency_code ?? '';
+                    $from_pay = $record->from_pay_status ?? '-';
                     
-                    return "$amount $currency"; // Example Output: "500 USD"
+                    return "$amount $currency ($from_pay)"; // Example Output: "500 USD (Invoice)"
                 })
                 ->searchable(),
 
@@ -98,8 +99,9 @@ class TransactionsTable
                 ->description(function ($record) {
                     $amount = $record->sold_price ?? '0';
                     $currency = $record->currencyTo?->currency_code ?? '';
+                    $to_pay = $record->to_pay_status ?? '-';    
                     
-                    return "$amount $currency"; // Example Output: "500 USD"
+                    return "$amount $currency ($to_pay)"; // Example Output: "500 USD (Cash)"
                 })
                 ->searchable(),
 

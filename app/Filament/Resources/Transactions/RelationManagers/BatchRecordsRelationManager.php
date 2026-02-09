@@ -135,8 +135,9 @@ protected function getBatchCurrency(): string
         $account = $record->accountFrom?->account_name_with_category_and_branch ?? '-';
         $price = number_format($record->fixed_price ?? 0, 2);
         $currency = $record->currencyFrom?->currency_code ?? '';
+         $from_pay = $record->from_pay_status ?? '-';
         
-        return "{$account}<br><span style='color: #6b7280; font-size: 0.875rem;'>{$price} {$currency}</span>";
+        return "{$account}<br><span style='color: #6b7280; font-size: 0.875rem;'>{$price} {$currency} ({$from_pay})</span>";
     })
     ->html()
     ->searchable()
@@ -148,8 +149,9 @@ TextColumn::make('accountTo.account_name_with_category_and_branch')
         $account = $record->accountTo?->account_name_with_category_and_branch ?? '-';
         $price = number_format($record->sold_price ?? 0, 2);
         $currency = $record->currencyTo?->currency_code ?? '';
+        $to_pay = $record->to_pay_status ?? '-';
         
-        return "{$account}<br><span style='color: #6b7280; font-size: 0.875rem;'>{$price} {$currency}</span>";
+        return "{$account}<br><span style='color: #6b7280; font-size: 0.875rem;'>{$price} {$currency} ({$to_pay})</span>";
     })
     ->html()
     ->searchable()
@@ -274,6 +276,24 @@ TextColumn::make('profit')
                 ->required()
                 ->columnSpan(6),
 
+                 Select::make('from_pay_status')
+                                ->label('From Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
+
+                                  Select::make('to_pay_status')
+                                  ->label('To Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
+
             // 5. SERVICE TYPE (FIXED LOGIC)
             // Use 'options' instead of 'relationship' query modification if the filtering 
             // relies on a JSON array (active_services) on the Branch model.
@@ -300,8 +320,8 @@ TextColumn::make('profit')
                 ->searchable()
                 ->live()
                 ->afterStateUpdated(fn ($state, $set) => $set('service_content', Service::find($state)?->content ?? ''))
-                ->columnSpan(6),
-
+                ->columnSpan(3),
+            Textinput::make('pnr')->columnSpan(3),
             DatePicker::make('delivery_date')->native(false)->columnSpan(2),
             DatePicker::make('depart_date')->native(false)->columnSpan(2),
             DatePicker::make('arrival_date')->native(false)->columnSpan(2),
@@ -420,6 +440,9 @@ TextColumn::make('profit')
                     'from_currency'   => $fromId,
                     'to_currency'     => $toId,
                     'profit'          => round($calculatedProfit, 2), // Use our calculated value
+                    'from_pay_status' => $data['from_pay_status'],
+                    'to_pay_status'   => $data['to_pay_status'],
+                    'pnr'             => $data['pnr'] ?? null,
                 ];
 
                 $record = $model::create($recordData);
@@ -439,6 +462,7 @@ TextColumn::make('profit')
                     'date_confirm' => $record->date_confirm,
                     'date_update' => $record->date_update,
                     'service_id'    => $record->service_type,
+                    'pay_status'   => $record->from_pay_status,
                 ]);
 
                 Account_ledger::create([
@@ -454,6 +478,7 @@ TextColumn::make('profit')
                     'date_confirm' => $record->date_confirm,
                     'date_update' => $record->date_update,
                     'service_id'    => $record->service_type,
+                    'pay_status'   => $record->to_pay_status,
                 ]);
 
                 Income_expense::create([

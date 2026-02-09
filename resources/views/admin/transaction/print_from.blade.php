@@ -448,7 +448,7 @@
                     </div>
                 </div>
                 <div class="col-6 voucher-title">
-                    <h4>Transaction Ledger</h4>
+                    <h4>Transaction Voucher</h4>
                     <div class="ref-no">
                         <i class="bi bi-upc-scan"></i> {{ $record->reference_no }}
                     </div>
@@ -665,14 +665,19 @@
       @endforeach
   @endforeach
 
-           <div class="card border-dark">
+{{-- ---------- Remarks-------- --}}
+  
+      @foreach ($remarks as $remark)
+          
+           <div class="card border-dark mb-2">
     <div class="card-header text-dark">
-        <h5 class="mb-0">Remarks</h5>
+        <h5 class="mb-0">{{ $remark->subject }} ({{ $remark->type }})</h5>
     </div>
     <div class="card-body">
-        <p class="card-text mb-0">{{ $record->from_remarks }}</p>
+        <p class="card-text mb-0">{{ $remark->comments }}</p>
     </div>
 </div>
+      @endforeach
 
 
         <!-- Signature Section - SIDE BY SIDE -->

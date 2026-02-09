@@ -47,7 +47,16 @@ class CurrencyResource extends Resource
             ->components([
               
                 TextInput::make('currency_name')
-                    ->required(),
+                ->required()
+                ->unique(
+                    table: Currency::class,
+                    column: 'slug',
+                    ignoreRecord: true
+                )
+                ->validationMessages([
+                    'unique' => 'This currency already exists.',
+                ]),
+
                 TextInput::make('currency_code'),
                 TextInput::make('sell_rate')->numeric(),
                 TextInput::make('buy_rate')->numeric(),

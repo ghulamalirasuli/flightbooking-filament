@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('comments')->nullable();
             $table->dateTime('date_comment');
             $table->string('updated_by')->nullable();
+            $table->boolean('reminder_notified')->default(false);
             $table->softDeletes();
             $table->timestamps();
         });

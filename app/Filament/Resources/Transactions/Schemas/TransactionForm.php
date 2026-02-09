@@ -132,6 +132,27 @@ class TransactionForm
 
                             ])
                             ->columnSpanFull(),
+                              Grid::make(12)
+                            ->schema([
+                                Select::make('from_pay_status')
+                                ->label('From Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
+
+                                  Select::make('to_pay_status')
+                                  ->label('To Payment Type')
+                                ->options([
+                                    'Invoice' => 'Invoice',
+                                    'Cash' => 'Cash',
+                                ])->required()
+                                ->default('Invoice')
+                                 ->columnSpan(6),
+                                  ])
+                            ->columnSpanFull(),
                         Grid::make(12)
                             ->schema([
                                 Select::make('service')
@@ -155,8 +176,9 @@ class TransactionForm
                                     })
                                     ->searchable()
                                     ->required()
-                                    ->columnSpan(6),
+                                    ->columnSpan(3),
 
+                                Textinput::make('pnr')->columnSpan(3),
                                 // DateTimePicker::make('date_remind')->columnSpan(2),
                                 DatePicker::make('delivery_date')->columnSpan(2),
                                 DatePicker::make('depart_date')->columnSpan(2),
