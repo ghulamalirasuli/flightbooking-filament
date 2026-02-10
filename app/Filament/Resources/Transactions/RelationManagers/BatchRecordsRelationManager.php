@@ -463,6 +463,7 @@ TextColumn::make('profit')
                     'date_update' => $record->date_update,
                     'service_id'    => $record->service_type,
                     'pay_status'   => $record->from_pay_status,
+                    'table_name'    => 'transaction',
                 ]);
 
                 Account_ledger::create([
@@ -479,6 +480,7 @@ TextColumn::make('profit')
                     'date_update' => $record->date_update,
                     'service_id'    => $record->service_type,
                     'pay_status'   => $record->to_pay_status,
+                    'table_name'    => 'transaction',
                 ]);
 
                 Income_expense::create([

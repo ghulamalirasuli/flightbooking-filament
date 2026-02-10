@@ -276,7 +276,8 @@ class TransactionAccountRelationManager extends RelationManager
                             'branch_id'     => auth()->user()->branch_id ?? 1,
                             'date_confirm'  => now()->format('Y-m-d'),
                             'date_update'   => now()->format('Y-m-d'),
-                            'pay_status'    => $data['pay_status']
+                            'pay_status'    => $data['pay_status'],
+                            'table_name'    => 'transaction',
                         ]);
                         \Log::info('Ledger created: ' . ($ledger->id ?? 'FAILED'));
                         });
@@ -465,6 +466,7 @@ class TransactionAccountRelationManager extends RelationManager
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',
+                                'table_name'    => 'transaction',
                             ]);
 
                             // --------To---------
@@ -483,6 +485,7 @@ class TransactionAccountRelationManager extends RelationManager
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',
+                                'table_name'    => 'transaction',
                             ]);
                         
                         

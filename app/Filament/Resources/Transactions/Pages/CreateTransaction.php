@@ -141,6 +141,7 @@ class CreateTransaction extends CreateRecord
                     'date_confirm'  => now(),
                     'service_id'    => $record->service_type, 
                     'pay_status'     => $data['from_pay_status'] ?? null,
+                    'table_name'    => 'transaction',
                 ]);
 
                 // Ledger: TO Account
@@ -159,6 +160,7 @@ class CreateTransaction extends CreateRecord
                     'date_confirm'  => now(),
                     'service_id'    => $record->service_type, 
                     'pay_status'     => $data['to_pay_status'] ?? null,
+                    'table_name'    => 'transaction',
                 ]);
 
                 // Ledger: Income Expense (Cost/Profit Tracking)

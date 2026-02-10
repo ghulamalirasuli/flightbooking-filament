@@ -346,6 +346,7 @@ Action::make('exchange')
                             'description'   => $data['description'] ?? 'Currency Exchange Buy',
                             'date_confirm'  => now()->format('Y-m-d'),
                             'date_update'   => now()->format('Y-m-d'),
+                           
                         ]);
                     });
 
@@ -507,7 +508,8 @@ Action::make('exchange')
                             'branch_id' => $data['branch_id'],
                             'date_confirm' => now()->format('Y-m-d'),
                             'date_update' => now()->format('Y-m-d'),
-                            'pay_status' =>'Cash'
+                            'pay_status' =>'Cash',
+                            'table_name'    => 'deposit',
                         ]);
 
                         });

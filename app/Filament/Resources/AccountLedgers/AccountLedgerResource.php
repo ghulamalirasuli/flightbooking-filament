@@ -29,7 +29,7 @@ class AccountLedgerResource extends Resource
     protected static ?int $navigationSort = 1;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-bangladeshi';
-    protected static string | UnitEnum | null $navigationGroup = 'Account Ledger';
+    protected static string | UnitEnum | null $navigationGroup = 'Account Ledgers';
 
     protected static ?string $navigationLabel = 'Account Ledger';
 

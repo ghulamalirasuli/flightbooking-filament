@@ -350,6 +350,7 @@ Action::make('print_all')
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',
+                                'table_name' => 'transfer',
                             ]);
 
                             // --------To---------
@@ -367,6 +368,7 @@ Action::make('print_all')
                                 'date_confirm' => now()->format('Y-m-d'),
                                 'date_update' => now()->format('Y-m-d'),
                                 'pay_status' => 'Transfer',
+                                'table_name' => 'transfer',
                             ]);
                         });
                         Notification::make()->title('Transfer Saved')->success()->send();

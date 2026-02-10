@@ -161,6 +161,7 @@ class AccountLedgersTable
                             'description' => $data['description'],
                             'status' => 1,
                             'user_id' => auth()->id(),
+                            'table_name' => 'account_ledger',
                         ]);
 
                         Notification::make()->title('Transaction Saved')->success()->send();

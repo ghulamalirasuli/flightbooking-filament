@@ -29,6 +29,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Hidden;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Enums\FiltersResetActionPosition;
@@ -144,6 +145,7 @@ class AccountLedgersRelationManager extends RelationManager
                 Textarea::make('description')
                     ->rows(3)
                     ->columnSpanFull(),
+                Hidden::make('table_name')->default('account_ledger'),
             ]);
     }
 

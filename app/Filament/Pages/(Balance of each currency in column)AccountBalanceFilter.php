@@ -20,7 +20,6 @@ use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
-use UnitEnum;
 
 class AccountBalanceFilter extends Page implements HasForms
 {
@@ -28,10 +27,6 @@ class AccountBalanceFilter extends Page implements HasForms
     use WithPagination;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-scale';
-
-     protected static ?int $navigationSort = 2;
-
-    protected static string | UnitEnum | null $navigationGroup = 'Account Ledgers';
 
     protected static ?string $title = 'Account Balance Filter';
     protected static ?string $navigationLabel = 'Account Balance Filter';
@@ -169,10 +164,9 @@ class AccountBalanceFilter extends Page implements HasForms
                 'account',
                 'reference_no',
                 'currency',
-                'pay_status',
                 DB::raw('SUM(credit) - SUM(debit) as balance')
             )
-            ->groupBy('account', 'reference_no', 'currency', 'pay_status')
+            ->groupBy('account', 'reference_no', 'currency')
             ->get();
 
         // Transform data
@@ -186,7 +180,6 @@ class AccountBalanceFilter extends Page implements HasForms
                     $row = [
                         'account_name' => $accounts[$accountUid]->account_name_with_category_and_branch ?? 'Unknown',
                         'reference_no' => $ledgerItems->first()->reference_no,
-                        'pay_status' => $ledgerItems->first()->pay_status,
                     ];
 
                     foreach ($currencies as $currency) {

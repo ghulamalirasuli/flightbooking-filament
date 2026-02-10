@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('uid');
             $table->string('account');
-           $table->string('reference_no')->nullable();
+            $table->string('reference_no')->nullable();
             $table->string('reference')->nullable();
             $table->text('description')->nullable();
             $table->decimal('credit', $precision = 38, $scale = 2)->nullable();
@@ -30,6 +30,7 @@ return new class extends Migration
             $table->date('date_confirm', $precision = 0);
             $table->date('date_update', $precision = 0);
             $table->string('pay_status')->nullable();
+            $table->string('table_name')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

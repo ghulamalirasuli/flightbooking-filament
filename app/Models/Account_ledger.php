@@ -14,7 +14,7 @@ class Account_ledger extends Model
     use UsesBranchTimezone;
 
     protected $fillable = ['uid','account','reference_no','reference','description','credit','debit','currency','status','user_id','branch_id'
-    ,'date_confirm','date_update','pay_status','service_id'];
+    ,'date_confirm','date_update','pay_status','service_id','table_name'];
 
       protected static function boot()
     {

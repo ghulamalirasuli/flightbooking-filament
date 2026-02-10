@@ -15,6 +15,7 @@ use Filament\Forms\Contracts\HasForms;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use BackedEnum;
+use UnitEnum;
 use Carbon\Carbon;
 
 class AccountBalance extends Page implements HasForms
@@ -24,6 +25,9 @@ class AccountBalance extends Page implements HasForms
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-scale';
     protected static ?string $title = 'Account Balance';
 
+    protected static ?int $navigationSort = 3;
+
+    protected static string | UnitEnum | null $navigationGroup = 'Account Ledgers';
     protected static ?string $navigationLabel = 'Account Balance';
     protected static ?string $recordTitleAttribute = 'Account Balance';
 

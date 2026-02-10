@@ -35,8 +35,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->spa(true)
                ->navigationGroups([
-                'Account Management', // The group you want first
-                'Account Ledger',
+                'Account Users', // The group you want first
+                'Account Ledgers',
                 'Transactions',
                 'Deposits',
                 'Flight Setting',
