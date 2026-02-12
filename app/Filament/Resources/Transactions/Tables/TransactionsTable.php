@@ -29,6 +29,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Columns\TextColumn;
 
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,7 @@ use App\Models\Branch;
 use App\Models\CashBox;
 use App\Models\AddTransaction;
 use App\Models\Service;
+use App\Models\User;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 
@@ -126,45 +128,6 @@ class TransactionsTable
                         return "{$date} By {$userName}";
                     }),
 
-    //      TextColumn::make('profit')
-    // ->label('Profit')
-    // ->formatStateUsing(function ($record) {
-    //     return number_format($record->profit ?? 0, 2)
-    //         . '<br><span class="text-gray-500 text-sm">'
-    //         . ($record->profitCurrency?->currency_code ?? '-')
-    //         . '</span>';
-    // })
-    // ->html()
-    // ->summarize(
-    //     Summarizer::make()
-    //         ->label('Total Profit')
-    //         ->using(function ($query): array {
-    //             // Get the sum
-    //             $total = $query->sum('profit');
-                
-    //             // Get distinct currencies in the current filtered set
-    //             $currencyIds = $query->clone()
-    //                 ->select('default_currency')
-    //                 ->distinct()
-    //                 ->pluck('default_currency');
-                
-    //             // If all records use the same currency, display it
-    //             if ($currencyIds->count() === 1 && $currencyIds->first()) {
-    //                 $currency = Currency::find($currencyIds->first())?->currency_code ?? '-';
-    //             } else {
-    //                 // Mixed currencies or no currency
-    //                 $currency = $currencyIds->isEmpty() ? '-' : 'Mixed';
-    //             }
-                
-    //             return [
-    //                 'total' => $total,
-    //                 'currency' => $currency,
-    //             ];
-    //         })
-    //         ->formatStateUsing(fn (array $state): string => 
-    //             number_format($state['total'], 2) . ' ' . $state['currency']
-    //         )
-    // ),
     TextColumn::make('profit')
     ->label('Profit')
     ->formatStateUsing(function ($record) {
@@ -217,43 +180,205 @@ class TransactionsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-            ])->defaultSort('created_at', 'desc') // Change 'desc' to 'asc' if you want oldest first
+            ])->defaultSort('created_at', 'desc')
             ->filters([
-               Filter::make('date_range')
-                    ->schema([
-                        DatePicker::make('date_confirm_from')->label('From Date'),
-                        DatePicker::make('date_confirm_until')->label('Until Date'),
+                // ===============================
+                // CUSTOM FILTER FORM WITH DEPENDENT DROPDOWNS
+                // ===============================
+                Filter::make('filters')
+                    ->form([
+                        // BRANCH SELECTOR
+                        Select::make('branch_id')
+                            ->label('Branch')
+                            ->options(Branch::pluck('branch_name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->live() // This makes it reactive
+                            ->columnSpan(3),
+
+                        // ACCOUNT SELECTOR - Depends on Branch
+                        Select::make('account')
+                            ->label('Account')
+                            ->options(function (callable $get) {
+                                $branchId = $get('branch_id');
+                                
+                                if (!$branchId) {
+                                    return [];
+                                }
+                                
+                                return Accounts::where('branch_id', $branchId)
+                                    ->get()
+                                    ->mapWithKeys(fn($account) => [
+                                        $account->uid => $account->account_name_with_category_and_branch
+                                    ])
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->disabled(fn (callable $get) => !$get('branch_id'))
+                            ->columnSpan(3),
+
+                        // USER SELECTOR - Depends on Branch
+                        Select::make('user_id')
+                            ->label('User')
+                            ->options(function (callable $get) {
+                                $branchId = $get('branch_id');
+                                
+                                if (!$branchId) {
+                                    return [];
+                                }
+                                
+                                return User::where('branch_id', $branchId)
+                                    ->pluck('name', 'id');
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->disabled(fn (callable $get) => !$get('branch_id'))
+                            ->columnSpan(3),
+
+                        // SERVICE SELECTOR - All services (no branch filter in Service model)
+                        Select::make('service_type')
+                            ->label('Service')
+                            ->options(Service::pluck('title', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->columnSpan(3),
+
+                        // DATE RANGE
+                        DatePicker::make('from')
+                            ->label('From Date')
+                            ->columnSpan(3),
+                            
+                        DatePicker::make('until')
+                            ->label('To Date')
+                            ->columnSpan(3),
+
+                        // STATUS - Column span 2 to make room for Trashed beside it
+                        Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'Confirmed' => 'Confirmed',
+                                'Pending'   => 'Pending',
+                                'Cancelled' => 'Cancelled',
+                            ])
+                            ->default('Pending')
+                            ->columnSpan(3),
+
+                        // TRASHED FILTER - Now beside Status (column span 2 + 2 = 4, fits in 12 column grid)
+                        Select::make('trashed')
+                            ->label('Deleted records')
+                            ->options([
+                                '' => 'Without deleted records',
+                                'with' => 'With deleted records',
+                                'only' => 'Only deleted records',
+                            ])
+                            ->default('')
+                            ->columnSpan(3),
                     ])
-                    ->columns(2)
-                    ->columnSpan(4)
+                    ->columns(12)
+                    ->columnSpanFull()
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['date_confirm_from'], fn ($q, $date) => $q->whereDate('date_confirm', '>=', $date))
-                            ->when($data['date_confirm_until'], fn ($q, $date) => $q->whereDate('date_confirm', '<=', $date));
-                    }),
-                TrashedFilter::make()->columnSpan(2),
-                 
-                SelectFilter::make('currency_id')
-                    ->label('Currency')
-                    ->options(function () {
-                        return \App\Models\Currency::query()
-                            ->where('status', true)
-                            ->pluck('currency_name', 'id')
-                            ->toArray();
+                            // Branch filter
+                            ->when(
+                                $data['branch_id'] ?? null,
+                                fn ($q, $value) => $q->where('branch_id', $value)
+                            )
+                            // Account filter (checks both account_from and account_to)
+                            ->when(
+                                $data['account'] ?? null,
+                                fn ($q, $value) => $q->where(function ($subQuery) use ($value) {
+                                    $subQuery->where('account_from', $value)
+                                             ->orWhere('account_to', $value);
+                                })
+                            )
+                            // User filter
+                            ->when(
+                                $data['user_id'] ?? null,
+                                fn ($q, $value) => $q->where('user_id', $value)
+                            )
+                            // Service filter
+                            ->when(
+                                $data['service_type'] ?? null,
+                                fn ($q, $value) => $q->where('service_type', $value)
+                            )
+                            // Status filter
+                            ->when(
+                                $data['status'] ?? null,
+                                fn ($q, $value) => $q->where('status', $value)
+                            )
+                            // Date range filters
+                            ->when(
+                                $data['from'] ?? null,
+                                fn ($q, $date) => $q->whereNotNull('date_confirm')
+                                                    ->whereDate('date_confirm', '>=', $date)
+                            )
+                            ->when(
+                                $data['until'] ?? null,
+                                fn ($q, $date) => $q->whereNotNull('date_confirm')
+                                                    ->whereDate('date_confirm', '<=', $date)
+                            )
+                            // Trashed filter logic
+                            ->when(
+                                isset($data['trashed']) && $data['trashed'] === 'with',
+                                fn ($q) => $q->withTrashed()
+                            )
+                            ->when(
+                                isset($data['trashed']) && $data['trashed'] === 'only',
+                                fn ($q) => $q->onlyTrashed()
+                            );
                     })
-                    ->searchable()
-                    ->columnSpan(2),
-
-
-                    SelectFilter::make('status')
-                        ->options([
-                            'Confirmed' => 'Confirmed',
-                            'Pending' => 'Pending',
-                            'Cancelled' => 'Cancelled',
-                        ])
-                        ->default('Pending')// Sets the default state to Pending
-                        ->columnSpan(2),
-                  
+                    // ADD THIS: Define filter indicators
+    ->indicateUsing(function (array $data): array {
+        $indicators = [];
+        
+        if ($data['branch_id'] ?? null) {
+            $branch = Branch::find($data['branch_id']);
+            $indicators[] = \Filament\Tables\Filters\Indicator::make('Branch: ' . ($branch?->branch_name ?? 'Unknown'))
+                ->removeField('branch_id');
+        }
+        
+        if ($data['account'] ?? null) {
+            $account = Accounts::where('uid', $data['account'])->first();
+            $indicators[] = \Filament\Tables\Filters\Indicator::make('Account: ' . ($account?->account_name ?? 'Unknown'))
+                ->removeField('account');
+        }
+        
+        if ($data['user_id'] ?? null) {
+            $user = User::find($data['user_id']);
+            $indicators[] = \Filament\Tables\Filters\Indicator::make('User: ' . ($user?->name ?? 'Unknown'))
+                ->removeField('user_id');
+        }
+        
+        if ($data['service_type'] ?? null) {
+            $service = Service::find($data['service_type']);
+            $indicators[] = \Filament\Tables\Filters\Indicator::make('Service: ' . ($service?->title ?? 'Unknown'))
+                ->removeField('service_type');
+        }
+        
+        if ($data['status'] ?? null) {
+            $indicators[] = \Filament\Tables\Filters\Indicator::make('Status: ' . $data['status'])
+                ->removeField('status');
+        }
+        
+        if (($data['from'] ?? null) || ($data['until'] ?? null)) {
+            $from = $data['from'] ?? 'Start';
+            $until = $data['until'] ?? 'End';
+            $indicators[] = \Filament\Tables\Filters\Indicator::make("Date: {$from} to {$until}")
+                ->removeField(['from', 'until']);
+        }
+        
+        if (($data['trashed'] ?? '') !== '') {
+            $trashedLabels = [
+                'with' => 'With deleted',
+                'only' => 'Only deleted',
+            ];
+            $indicators[] = \Filament\Tables\Filters\Indicator::make($trashedLabels[$data['trashed']] ?? 'Unknown')
+                ->removeField('trashed');
+        }
+        
+        return $indicators;
+    }),
             ], FiltersLayout::Modal)
             ->deferFilters(false)
             ->filtersFormColumns(12)
@@ -261,7 +386,6 @@ class TransactionsTable
             ->filtersFormWidth(Width::Full)
             ->recordActions([
                ActionGroup::make([
-                // Inside your Table configuration
                 ViewAction::make()
                     ->openUrlInNewTab(),
                 EditAction::make(),

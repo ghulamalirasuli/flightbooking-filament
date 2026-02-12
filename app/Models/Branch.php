@@ -79,7 +79,7 @@ public function activeAccountCategories()
 
     public function users()
     {
-        return $this->hasMany(User::class, 'branch_id', 'uid');
+        return $this->hasMany(User::class, 'branch_id', 'id');
     }
 
     // public function currencies()
