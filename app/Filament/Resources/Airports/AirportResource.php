@@ -31,10 +31,10 @@ class AirportResource extends Resource
 {
     protected static ?string $model = Airport::class;
 
-    protected static ?int $navigationSort = 2;
+     protected static ?int $navigationSort = 10;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-hand-raised';
-    protected static string | UnitEnum | null $navigationGroup = 'Flight Setting';
+     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-globe-alt';
+    protected static string | UnitEnum | null $navigationGroup = 'Flight Management';
 
     protected static ?string $recordTitleAttribute = 'name';
 

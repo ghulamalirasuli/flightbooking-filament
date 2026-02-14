@@ -53,7 +53,7 @@ public static function getGloballySearchableAttributes(): array
 {
     return ['reference_no', 'fullname'];
 }
-
+ 
   public static function form(Schema $schema): Schema
     {
         return TransactionForm::configure($schema);

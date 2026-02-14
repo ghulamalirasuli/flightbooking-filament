@@ -33,10 +33,10 @@ use UnitEnum;
 class ProviderResource extends Resource
 {
     protected static ?string $model = Provider::class;
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 8;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static string | UnitEnum | null $navigationGroup = 'Flight Setting';
+     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-globe-alt';
+    protected static string | UnitEnum | null $navigationGroup = 'Flight Management';
 
     protected static ?string $recordTitleAttribute = 'account_uid';
 

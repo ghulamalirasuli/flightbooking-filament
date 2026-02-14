@@ -32,10 +32,11 @@ class AirlinesResource extends Resource
 {
     protected static ?string $model = Airlines::class;
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 9;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-paper-airplane';
-    protected static string | UnitEnum | null $navigationGroup = 'Flight Setting';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Flight Management';
 
 
     protected static ?string $recordTitleAttribute = 'name';

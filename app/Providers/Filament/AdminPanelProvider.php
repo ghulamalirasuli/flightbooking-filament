@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 'Account Ledgers',
                 'Transactions',
                 'Deposits',
-                'Flight Setting',
+                'Flight Management',
                 'CMS',     
             ])
 //             ->navigationGroups([
