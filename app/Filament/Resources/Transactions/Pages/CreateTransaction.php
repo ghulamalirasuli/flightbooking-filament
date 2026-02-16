@@ -22,6 +22,17 @@ class CreateTransaction extends CreateRecord
 {
     protected static string $resource = TransactionResource::class;
 
+        public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        return 'Create Transaction Form'; // Change Create transaction to Create Transaction Form or you can return '';
+    }
+    
+    // Alternatively, hide the entire header section
+    protected function getHeaderActions(): array
+    {
+        return [];
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function () use ($data) {

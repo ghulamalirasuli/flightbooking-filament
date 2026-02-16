@@ -83,7 +83,7 @@ class Currency extends Model
     public function depositHistoriesTo()   { return $this->hasMany(Deposit_history::class, 'currency_id', 'uid'); }
     public function documentsFrom()        { return $this->hasMany(Documents::class, 'from_currency', 'uid'); }
     public function documentsTo()          { return $this->hasMany(Documents::class, 'to_currency', 'uid'); }
-    public function expenses()             { return $this->hasMany(Expense::class, 'currency', 'uid'); }
+    public function expenses()             { return $this->hasMany(Expense::class, 'currency', 'id'); }
 
     public function passengerInfosFrom()     { return $this->hasMany(PassengerInfo::class, 'from_currency_id', 'uid'); }
     public function passengerInfosTo()       { return $this->hasMany(PassengerInfo::class, 'to_currency_id', 'uid'); }

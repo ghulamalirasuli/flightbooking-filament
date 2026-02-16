@@ -16,8 +16,8 @@ return new class extends Migration
         Schema::create('expense_type', function (Blueprint $table) {
             $table->id();
             $table->string('uid');
-            $table->string('branch_id');
-            $table->string('user_id');
+            $table->string('branch_id')->nullable();
+            $table->string('user_id')->nullable();
             $table->string('type');
             $table->string('slug')->unique()->nullable();
             $table->tinyInteger('is_active')->default(1);

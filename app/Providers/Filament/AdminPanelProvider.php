@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
                 'Transactions',
                 'Deposits',
                 'Flight Management',
+                'Cost & Income',
                 'CMS',     
             ])
 //             ->navigationGroups([

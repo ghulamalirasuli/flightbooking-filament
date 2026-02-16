@@ -10,12 +10,17 @@ use App\Http\Controllers\admin\AccountLedgerPrintController;
 use App\Http\Controllers\admin\DepositPrintController;
 use App\Http\Controllers\admin\MTPrintController;
 use App\Http\Controllers\admin\TransactionPrintController;
+use App\Http\Controllers\admin\ExpensePrintController;
 
 //1--- The route using invoke function
 // Route::get('/admin/deposits/print/{ids}', DepositPrintController::class)
 //     ->name('deposits.print')
 //     ->middleware(['auth']);
 //2-- uisng normal controller
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/expense/print', [ExpensePrintController::class, 'print'])->name('expenses.print');
+});
 
 Route::get('/admin/transfer/print/{record}', [MTPrintController::class, 'print'])
     ->name('transfer.print')->middleware(['auth']);
