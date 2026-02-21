@@ -8,4 +8,10 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePubfareMarkup extends CreateRecord
 {
     protected static string $resource = PubfareMarkupResource::class;
+
+      protected function getRedirectUrl(): string
+        {
+            return $this->getResource()::getUrl('index');
+        }
+        
 }

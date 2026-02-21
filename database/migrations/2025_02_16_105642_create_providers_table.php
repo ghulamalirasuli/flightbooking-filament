@@ -25,11 +25,11 @@ return new class extends Migration
             $table->id();
             $table->string('uid');
             $table->string('account_uid'); // like  'Amadeus',s
-            $table->string('api_key'); // 'your_amadeus_client_id',
-            $table->text('api_secret'); //'your_amadeus_client_secret',
-            $table->string('base_url'); //'https://test.api.amadeus.com',
-            $table->text('auth_endpoint');  //'/v1/security/oauth2/token',
-            $table->string('url_endpoint');//'/v2/shopping/flight-offers'
+            $table->string('api_key')->nullable(); // 'your_amadeus_client_id',
+            $table->text('api_secret')->nullable(); //'your_amadeus_client_secret',
+            $table->string('base_url')->nullable(); //'https://test.api.amadeus.com',
+            $table->text('auth_endpoint')->nullable();  //'/v1/security/oauth2/token',
+            $table->string('url_endpoint')->nullable();//'/v2/shopping/flight-offers'
             // $table->json('extra_config');
             $table->tinyInteger('status')->default(0);
             $table->softDeletes();

@@ -30,6 +30,12 @@ class PubfareMarkupResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'supplier_id';
 
+     protected static ?string $navigationLabel = 'Public Fare Markups';
+
+    protected static ?string $createButtonLabel = 'New Fare Markup';
+
+    protected static ?string $modelLabel = 'Public Fare Markup';
+ 
     public static function form(Schema $schema): Schema
     {
         return PubfareMarkupForm::configure($schema);

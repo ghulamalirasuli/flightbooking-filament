@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('supplier_id');//Supplier id
             $table->string('currency');
             $table->string('fare_type');
+            $table->string('fare_to')->nullable();
             // ----- Passenger Info ----------
             $table->string('from_adult_markup')->nullable();
             $table->string('from_adult_action')->nullable();

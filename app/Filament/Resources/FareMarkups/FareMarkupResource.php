@@ -29,6 +29,11 @@ class FareMarkupResource extends Resource
     protected static string | UnitEnum | null $navigationGroup = 'Flight Management';
 
     protected static ?string $recordTitleAttribute = 'airlines';
+    protected static ?string $navigationLabel = 'Fare Markups';
+
+    protected static ?string $createButtonLabel = 'New Fare Markup';
+
+    protected static ?string $modelLabel = 'Fare Markup';
 
     public static function form(Schema $schema): Schema
     {
@@ -40,6 +45,7 @@ class FareMarkupResource extends Resource
         return FareMarkupInfolist::configure($schema);
     }
 
+    
     public static function table(Table $table): Table
     {
         return FareMarkupsTable::configure($table);

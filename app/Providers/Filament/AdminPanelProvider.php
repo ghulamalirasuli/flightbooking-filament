@@ -20,6 +20,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Navigation\NavigationGroup;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -83,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
             FilamentShieldPlugin::make(),
+            FilamentApexChartsPlugin::make(),
             ]);
     }
 }

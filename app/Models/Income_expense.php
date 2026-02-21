@@ -38,6 +38,6 @@ class Income_expense extends Model
 
     public function service(): BelongsTo
     {
-        return $this->belongsTo(Service::class, 'service_uid', 'uid');
+        return $this->belongsTo(Service::class, 'service_uid', 'id');
     }
 }

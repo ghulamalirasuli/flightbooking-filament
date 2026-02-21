@@ -19,6 +19,19 @@ class Provider extends Model
         'base_url', 'auth_endpoint', 'url_endpoint', 'extra_config'
     ];
 
+    protected $casts = [
+    'extra_config' => 'array',
+];
+
+protected static function booted()
+{
+    static::creating(function ($provider) {
+        if (!$provider->uid) {
+            $provider->uid = "P" . date('ymdhis');
+        }
+    });
+}
+
     /* ---------- RELATIONSHIPS ---------- */
 
     public function account(): BelongsTo

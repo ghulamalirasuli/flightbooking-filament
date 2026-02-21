@@ -16,11 +16,12 @@ return new class extends Migration
         Schema::create('faremarkup', function (Blueprint $table) {
             $table->id();
             $table->string('uid');
-            $table->string('branch_id');
+            $table->string('branch_id')->nullable();
             $table->string('user_id');
             $table->string('supplier_id');//Supplier id
             $table->string('currency');
             $table->string('fare_type');
+            $table->string('fare_to')->nullable();
             $table->string('from')->nullable();
             $table->string('to')->nullable();
             $table->string('airlines')->nullable();
