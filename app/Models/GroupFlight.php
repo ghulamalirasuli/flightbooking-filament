@@ -24,6 +24,22 @@ class GroupFlight extends Model
         'changeable','refundable','status','duration','layover'
     ];
 
+protected static function boot()
+{
+    parent::boot();
+
+    static::creating(function ($flight) {
+        // 1. Always ensure UID is generated
+        if (empty($flight->uid)) {
+            $flight->uid = 'GF' . now()->format('ymdhis') . \Illuminate\Support\Str::random(3);
+        }
+// 2. Set default status to 'Pending' if it is empty
+        if (empty($flight->status)) {
+            $flight->status = 'Pending';
+        }
+
+    });
+}
     /* ---------- RELATIONSHIPS ---------- */
 
     public function airline(): BelongsTo
