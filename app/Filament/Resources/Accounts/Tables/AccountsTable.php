@@ -30,6 +30,7 @@ use Filament\Tables\Filters\SelectFilter;
 use App\Models\Branch;
 use App\Models\Currency;
 use App\Models\Account_category;
+use Filament\Tables\Filters\TernaryFilter;
 
 class AccountsTable
 {
@@ -170,6 +171,10 @@ class AccountsTable
                     ->sortable(),
             ])
             ->filters([
+                TernaryFilter::make('is_active')
+        ->label('Active Status'),
+    TernaryFilter::make('is_b2c')
+        ->label('B2C Status'),
                 TrashedFilter::make(),
                 SelectFilter::make('branch_id')
                 ->label('Branch')

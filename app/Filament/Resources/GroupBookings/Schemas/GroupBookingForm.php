@@ -41,7 +41,7 @@ class GroupBookingForm
                                     ->live()
                                     ->afterStateUpdated(fn ($set) => $set('account_id', null))
                                     ->searchable()
-                                    ->columnSpan(3),
+                                    ->columnSpan(4),
 
                                 Select::make('account_id')
                                 ->label('Account')
@@ -80,7 +80,7 @@ class GroupBookingForm
                                         return Currency::whereIn('id', $account->access_currency)->pluck('currency_name', 'id');
                                     })
                                     ->required()
-                                    ->columnSpan(3),
+                                    ->columnSpan(2),
 
                                 Select::make('type')
                                     ->label('Flight Type')
@@ -229,13 +229,13 @@ class GroupBookingForm
                             ->options(Airlines::pluck('name', 'name'))
                             ->searchable()
                             ->required()
-                            ->columnSpan(4),
+                            ->columnSpan(6),
 
                         TextInput::make('flightno')
                             ->label('Flight Number')
                             ->placeholder('EK202')
                             ->required()
-                            ->columnSpan(3),
+                            ->columnSpan(2),
 
                         Select::make('class')
                             ->options([
@@ -251,7 +251,7 @@ class GroupBookingForm
                             ->label('PNR / Booking Ref')
                             ->placeholder('ABC123')
                             ->extraInputAttributes(['class' => 'uppercase'])
-                            ->columnSpan(4),
+                            ->columnSpan(3),
 
                         // --- ROW 2: Departure Details ---
                         Select::make('from_f')

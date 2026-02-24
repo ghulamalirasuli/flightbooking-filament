@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\Accounts\Widgets\AccountOverview;
 use UnitEnum;
 
 class AccountsResource extends Resource
@@ -27,6 +28,14 @@ class AccountsResource extends Resource
     protected static string | UnitEnum | null $navigationGroup = 'Account Users';
 
     protected static ?string $recordTitleAttribute = 'account_name';
+
+    public static function getWidgets(): array
+{
+    return [
+        AccountOverview::class,
+    ];
+}
+
 
     public static function form(Schema $schema): Schema
     {
