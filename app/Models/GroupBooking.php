@@ -26,12 +26,12 @@ class GroupBooking extends Model
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch::class, 'branch_id', 'uid');
+        return $this->belongsTo(Branch::class, 'branch_id', 'id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id', 'uid');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function account(): BelongsTo
@@ -41,7 +41,7 @@ class GroupBooking extends Model
 
     public function currencyInfo(): BelongsTo
     {
-        return $this->belongsTo(Currency::class, 'currency', 'uid');
+        return $this->belongsTo(Currency::class, 'currency', 'id');
     }
 
     public function groupFlights(): HasMany

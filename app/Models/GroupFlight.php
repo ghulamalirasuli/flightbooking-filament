@@ -51,4 +51,17 @@ protected static function boot()
     {
         return $this->belongsTo(GroupBooking::class, 'reference_no', 'reference_no');
     }
+
+
+    public function fromAirport(): BelongsTo
+    {
+        // Assuming 'from_f' in GroupFlight matches 'code' in Airport
+        return $this->belongsTo(Airport::class, 'from_f', 'id'); 
+    }
+
+    public function toAirport(): BelongsTo
+    {
+        // Assuming 'to_f' in GroupFlight matches 'code' in Airport
+        return $this->belongsTo(Airport::class, 'to_f', 'id'); 
+    }
 }

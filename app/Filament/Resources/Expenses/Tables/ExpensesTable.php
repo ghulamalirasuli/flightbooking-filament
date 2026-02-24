@@ -53,7 +53,9 @@ class ExpensesTable
     {
         return $table
             ->columns([
-             
+              TextColumn::make('index')
+                    ->label('#')
+                    ->rowIndex(),
                 TextColumn::make('user.name')
                 // ->label('User / Inserted At')
                 ->label('Inserted')
