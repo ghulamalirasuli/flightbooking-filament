@@ -50,6 +50,9 @@ use App\Models\Accounts;
 use App\Models\Currency;
 use App\Models\Branch;
 use App\Models\CashBox;
+use App\Models\Expense_type;
+use App\Models\Expense;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -84,32 +87,32 @@ class DepositsTable
                     ->searchable(),
                     
                TextColumn::make('from_account')
-    ->label('Account')
-    ->formatStateUsing(function ($state, $record) {
-        // 1. Check if the relationship actually loaded an Account model
-        $account = $record->account;
+                ->label('Account')
+                ->formatStateUsing(function ($state, $record) {
+                    // 1. Check if the relationship actually loaded an Account model
+                    $account = $record->account;
 
-        if ($account) {
-            // Use your model's custom attribute for the formatted name
-            return $account->account_name_with_category_and_branch;
-        }
+                    if ($account) {
+                        // Use your model's custom attribute for the formatted name
+                        return $account->account_name_with_category_and_branch;
+                    }
 
-        // 2. If no account relationship, return the raw text (e.g., "Exchange Currency")
-        // or a default placeholder if the state is empty
-        return $state ?? 'N/A';
-    })
-    ->searchable(query: function ($query, string $search) {
-        $query->where(function ($q) use ($search) {
-            // Search the raw text field itself (covers "Exchange Currency")
-            $q->where('from_account', 'like', "%{$search}%")
-              // Also search through the relationship if it exists
-              ->orWhereHas('account', function ($sub) use ($search) {
-                  $sub->where('account_name', 'like', "%{$search}%")
-                      ->orWhereHas('accountType', fn($inner) => $inner->where('accounts_category', 'like', "%{$search}%"))
-                      ->orWhereHas('branch', fn($inner) => $inner->where('branch_name', 'like', "%{$search}%"));
-              });
-        });
-    }),
+                    // 2. If no account relationship, return the raw text (e.g., "Exchange Currency")
+                    // or a default placeholder if the state is empty
+                    return $state ?? 'N/A';
+                })
+                ->searchable(query: function ($query, string $search) {
+                    $query->where(function ($q) use ($search) {
+                        // Search the raw text field itself (covers "Exchange Currency")
+                        $q->where('from_account', 'like', "%{$search}%")
+                        // Also search through the relationship if it exists
+                        ->orWhereHas('account', function ($sub) use ($search) {
+                            $sub->where('account_name', 'like', "%{$search}%")
+                                ->orWhereHas('accountType', fn($inner) => $inner->where('accounts_category', 'like', "%{$search}%"))
+                                ->orWhereHas('branch', fn($inner) => $inner->where('branch_name', 'like', "%{$search}%"));
+                        });
+                    });
+                }),
                 TextColumn::make('entry_type')
                     ->label('Type')
                     ->searchable()->toggleable(isToggledHiddenByDefault: true),
@@ -204,7 +207,7 @@ Action::make('exchange')
                     // 1. Branch Selection
                     Select::make('branch_id')
                         ->label('Branch')
-                        ->options(\App\Models\Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
                         ->live()
                         ->required()
                         ->columnSpan(12),
@@ -215,7 +218,7 @@ Action::make('exchange')
                         ->live()
                         ->required()
                         ->options(fn (callable $get) => 
-                            \App\Models\Currency::where('status', true)->pluck('currency_name', 'id')
+                            Currency::where('status', true)->pluck('currency_name', 'id')
                         )
                         ->columnSpan(4),
 
@@ -238,7 +241,7 @@ Action::make('exchange')
                         ->live()
                         ->required()
                         ->options(fn (callable $get) => 
-                            \App\Models\Currency::where('status', true)
+                            Currency::where('status', true)
                                 ->where('id', '!=', $get('sell_currency'))
                                 ->pluck('currency_name', 'id')
                         )
@@ -367,62 +370,93 @@ Action::make('exchange')
                     ->label('New Deposit')
                     ->icon('heroicon-o-plus')
                     ->modalHeading('New Deposit')
+                    ->modalWidth(\Filament\Support\Enums\Width::SevenExtraLarge)
                      // --------------- Deposit Form---------
                     ->form([
                        
                         // ROW 1: Branch and Date
-                        Grid::make(12)->schema([
-                             
-                            Select::make('branch_id')
-                                ->label('Branch')
-                                ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
-                                ->live()
-                                ->afterStateUpdated(function ($set) {
-                                    $set('from_account', null);
-                                    $set('currency_id', null);
-                                })
-                                ->searchable()
-                                ->columnSpan(6),
+                       Grid::make(12)->schema([
+                    Select::make('branch_id')
+                        ->label('Branch')
+                        ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->live()
+                        ->afterStateUpdated(function ($set) {
+                            $set('from_account', null);
+                            $set('type', null); // Reset expense type too
+                            $set('currency_id', null);
+                        })
+                        ->searchable()
+                        ->columnSpan(3),
+                    
+                    Select::make('account_type')
+                        ->label('Account Type')
+                        ->options([
+                            'Account' => 'Account',
+                            'Expense' => 'Expense',
+                        ])
+                        ->required()
+                        ->live() // 1. MAKE THIS LIVE
+                        ->afterStateUpdated(function ($set) {
+                            // Optional: Clear selections when switching types to prevent stale data
+                            $set('from_account', null);
+                            $set('type', null);
+                            $set('currency_id', null);
+                        })
+                        ->columnSpan(3),
 
-                                 Group::make([
-                                Select::make('from_account')
-                                ->label('Account')
-                                ->options(function (callable $get) {
-                                    $branchId = $get('branch_id');
+                    Group::make([
+                        // List of Accounts if account_type is Account
+                        Select::make('from_account')
+                            ->label('Account')
+                            ->visible(fn (callable $get) => $get('account_type') === 'Account') // 2. ADD VISIBILITY CONDITION
+                            ->options(function (callable $get) {
+                                $branchId = $get('branch_id');
 
-                                    return \App\Models\Accounts::query()
-                                        ->with(['accountType', 'branch']) // Eager load for performance
-                                        ->where('is_active', true)
-                                        ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-                                        ->get()
-                                        ->mapWithKeys(function ($account) {
-                                            // Using your specific formatting logic
-                                            $name = $account->account_name;
-                                            $category = $account->accountType?->accounts_category ?? 'N/A';
-                                            $branch = $account->branch?->branch_name ?? 'N/A';
+                                return Accounts::query()
+                                    ->with(['accountType', 'branch']) 
+                                    ->where('is_active', true)
+                                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                                    ->get()
+                                    ->mapWithKeys(function ($account) {
+                                        $name = $account->account_name;
+                                        $category = $account->accountType?->accounts_category ?? 'N/A';
+                                        $branch = $account->branch?->branch_name ?? 'N/A';
 
-                                            return [
-                                                $account->uid => "({$branch}) {$name} - {$category}"
-                                            ];
-                                        });
-                                })
-                                ->live()
-                                ->required()
-                                // ->helperText('Select the source account for this deposit. Only active accounts for the selected branch are shown.')
-                                ->afterStateUpdated(fn ($set) => $set('currency_id', null))
-                                ->searchable(),
+                                        return [
+                                            $account->uid => "({$branch}) {$name} - {$category}"
+                                        ];
+                                    });
+                            })
+                            ->live()
+                            ->required(fn (callable $get) => $get('account_type') === 'Account') // Only required if visible
+                            ->afterStateUpdated(fn ($set) => $set('currency_id', null))
+                            ->searchable(),
+                
+                // List of Expenses if account_type is Expense
+                        Select::make('expense_type')
+                            ->label('Expense Type')
+                            ->visible(fn (callable $get) => $get('account_type') === 'Expense') // 3. ADD VISIBILITY CONDITION
+                            ->options(function (callable $get) {
+                                $branchid = $get('branch_id');
+                                if (!$branchid) return [];
                                 
+                                return Expense_type::query()
+                                    ->where('is_active', true)
+                                    ->where('branch_id', $branchid)
+                                    ->pluck('type', 'type')
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->required(fn (callable $get) => $get('account_type') === 'Expense'), // Only required if visible
 
-                                  Placeholder::make('from_balance_preview')
-                                ->hiddenLabel()
-                                ->visible(fn ($get) => filled($get('from_account'))) // Fixes the empty space issue
-                                ->content(fn ($get) => view('filament.components.account-balance-table', [
-                                    'accountUid' => $get('from_account')
-                                ])),
-                        ])->columnSpan(6),
-                    ]),
-                      
-
+                        Placeholder::make('from_balance_preview')
+                            ->hiddenLabel()
+                            ->visible(fn ($get) => filled($get('from_account')) && $get('account_type') === 'Account') // Ensure it only shows for Accounts
+                            ->content(fn ($get) => view('filament.components.account-balance-table', [
+                                'branchid' => $get('from_account')
+                            ])),
+                    ])->columnSpan(6),
+                ]),
                         // ROW 2: Account and Currency (DEPENDENT)
                         Grid::make(12)->schema([
                             
@@ -494,6 +528,7 @@ Action::make('exchange')
                             'date_update' => now()->format('Y-m-d'),
                         ]);
 
+                        if($data['account_type']=='Account'){
                         // Insert into account_ledger table
                         Account_ledger::create([
                             'uid' => 'CBI' . now()->format('ymdhis'),
@@ -511,6 +546,26 @@ Action::make('exchange')
                             'pay_status' =>'Cash',
                             'table_name'    => 'deposit',
                         ]);
+                        }
+                        elseif($data['account_type']=='Expense'){
+                                Expense::create([
+                                    'uid'              => 'CBI' . now()->format('ymdhis'),
+                                    'branch_id'        => $data['branch_id'],
+                                    'user_id'          => auth()->id(),
+                                    'expense_id'        => $data['type'],
+                                    'account'         => $data['account'] ?? null,
+                                    'currency'       => $data['currency'] ?? null,
+                                    'reference_no'     => $batchReferenceNo, // Shared Batch ID
+                                    'reference'        => $uniqueRef,        // Unique ID
+                                    'description'      => $data['description'] ?? null,
+                                    'credit'      => $data['entry_type'] === 'Credit' ? $data['amount'] : 0 ,
+                                    'debit'      => $data['entry_type'] === 'Debit' ? $data['amount'] : 0 ,
+                                    'date_confirm'     => now(),
+                                    'date_update'      => now(),
+                                    'status'        => 'Pending',
+                                    'entry_type' => $data['entry_type'] ?? null,
+                        ]);
+                        }
 
                         });
                         Notification::make()->title('Deposit Saved')->success()->send();
@@ -807,6 +862,7 @@ Action::make('exchange')
     ->label('Edit')
     ->icon('heroicon-m-pencil-square')
     ->modalHeading('Edit Deposit')
+    ->modalWidth(\Filament\Support\Enums\Width::SevenExtraLarge)
     ->visible(fn ($record) => $record->entry_type !== 'Exchange')
     ->form([
         Section::make('Deposit Details')

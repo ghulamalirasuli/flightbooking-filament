@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('currency_id');
             $table->enum('status', ['Confirmed', 'Pending','Cancelled']);
             $table->string('entry_type')->nullable();
+            $table->string('account_type')->nullable();
+            $table->string('reference')->nullable();
             $table->string('branch_id');
             $table->string('user_id');
             $table->date('date_confirm', $precision = 0);

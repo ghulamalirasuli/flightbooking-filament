@@ -16,7 +16,7 @@ class CashBox extends Model
     protected $fillable = [
         'uid', 'from_account', 'amount_from', 'currency_from', 'reference_no', 'reference',
         'credit', 'debit', 'currency_id', 'user_id', 'branch_id', 'description',
-        'entry_type', 'status', 'date_confirm', 'date_update', 'update_by'
+        'entry_type','account_type', 'status', 'date_confirm', 'date_update', 'update_by'
     ];
 
 

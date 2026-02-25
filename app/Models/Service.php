@@ -19,7 +19,7 @@ class Service extends Model
     protected $table = 'our_service';
     use HasFactory, UsesBranchTimezone, SoftDeletes;
 
-    protected $fillable = ['uid','user_id','title','slug','content','status','defaults'];
+    protected $fillable = ['uid','user_id','title','slug','content','status','defaults','is_income'];
 
      protected static function boot()
 {

@@ -24,8 +24,12 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\RichEditor;
-
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
+
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Support\Enums\IconSize;
@@ -86,11 +90,13 @@ class ServiceResource extends Resource
                     //         },
                     //     ];
                     // }),
-
-                    TextInput::make('title')
+                    Grid::make(12)->schema([
+                            TextInput::make('title')
                                     ->label('Service Title')
-                                    ->columnSpanFull(),
-
+                                    ->columnSpan(8),
+                            Toggle::make('is_income')->columnSpan(4)->default(true),
+                     ])->columnSpanFull(),
+                        
                       RichEditor::make('content')->columnSpanFull(),
                  ]);
     }
@@ -130,6 +136,7 @@ class ServiceResource extends Resource
             ->columns([
              
                 TextColumn::make('title')
+                ->label('Service Name')
                     ->searchable(),
                     // In ServiceResource.php inside the table() method
                 TextColumn::make('content')
@@ -138,15 +145,17 @@ class ServiceResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-               ToggleColumn::make('status') // Replace 'status' with your actual boolean field name
-                ->label('Status')
+             
+
+            ToggleColumn::make('is_income') // Replace 'status' with your actual boolean field name
+                ->label('Service Type')
                  ->onColor('success')
                 ->offColor('danger')
                 ->afterStateUpdated(function ($record, bool $state) {
                     // Determine the message based on the new state
                     $message = $state
-                        ? "{$record->title} is now Active."
-                        : "{$record->title} has been set to Inactive.";
+                        ? "{$record->title} is now an Income."
+                        : "{$record->title} is no longer an Income.";
 
                     // Dispatch the custom notification
                     Notification::make()
@@ -155,6 +164,18 @@ class ServiceResource extends Resource
                         ->duration(5000) // Optional: show for 5 seconds
                         ->send();
                 }),
+
+                // Add this TextColumn right after the ToggleColumn
+                TextColumn::make('expense_type_label')
+                    ->label('') // Keep the header blank so it looks like it belongs to the toggle
+                    ->getStateUsing(fn ($record) => $record->is_income ? 'Income' : 'Expense')
+                    ->badge() // Optional: Makes it look like a nice pill/badge
+                    ->color(fn (string $state): string => match ($state) {
+                        'Expense' => 'danger',
+                        'Income' => 'success',
+                    }),
+
+            
                 ToggleColumn::make('defaults')
                     ->onColor('success')
                     ->offColor('danger')
@@ -176,8 +197,6 @@ class ServiceResource extends Resource
                             ->update(['defaults' => false]);
 
                         // 2. You don't technically need this update if the toggle is handling the $record->defaults=true,
-                        // but keeping it ensures the $record instance is fully synchronized before the notification.
-                        // $record->update(['defaults' => true]);
 
                         // 3. Dispatch the custom success notification
                         Notification::make()
@@ -197,6 +216,34 @@ class ServiceResource extends Resource
                             ->duration(5000)
                             ->send();
                     }
+                }),
+
+                  // Add this TextColumn right after the ToggleColumn
+                TextColumn::make('default_label')
+                    ->label('') // Keep the header blank so it looks like it belongs to the toggle
+                    ->getStateUsing(fn ($record) => $record->defaults ? 'Web Portal' : '')
+                    ->badge() // Optional: Makes it look like a nice pill/badge
+                    ->color(fn (string $state): string => match ($state) {
+                        'Web Portal' => 'success',
+                        '' => '',
+                    }),
+
+              ToggleColumn::make('status') // Replace 'status' with your actual boolean field name
+                ->label('Status')
+                 ->onColor('success')
+                ->offColor('danger')
+                ->afterStateUpdated(function ($record, bool $state) {
+                    // Determine the message based on the new state
+                    $message = $state
+                        ? "{$record->title} is now Active."
+                        : "{$record->title} has been set to Inactive.";
+
+                    // Dispatch the custom notification
+                    Notification::make()
+                        ->title($message)
+                        ->success() // Sets the notification color to green
+                        ->duration(5000) // Optional: show for 5 seconds
+                        ->send();
                 }),
 
                 TextColumn::make('deleted_at')
