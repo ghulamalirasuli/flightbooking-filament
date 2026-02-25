@@ -14,7 +14,7 @@ class Expense extends Model
     protected $table = 'expenses';
 
     protected $fillable = [
-        'branch_id','user_id','expense_id','uid','account','currency',
+        'branch_id','user_id','service_id','uid','expensetype','currency',
         'reference_no','reference','description','credit','debit',
         'entry_type','status','date_confirm','date_update','update_by'
     ];
@@ -55,12 +55,12 @@ protected static function boot()
 
     public function expenseType(): BelongsTo
     {
-        return $this->belongsTo(Expense_type::class, 'expense_id', 'id');
+        return $this->belongsTo(Expense_type::class, 'expensetype', 'id');
     }
 
-    public function accountExp(): BelongsTo
+    public function servicetype(): BelongsTo
     {
-        return $this->belongsTo(Accounts::class, 'account', 'uid');
+        return $this->belongsTo(Service::class, 'service_id', 'id');
     }
 
     public function currencyExp(): BelongsTo

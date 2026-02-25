@@ -10,6 +10,8 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 
+use App\Models\Expense_type;
+use App\Models\Service;
 use App\Models\Branch;
 
 class ExpenseTypeForm
@@ -23,18 +25,20 @@ class ExpenseTypeForm
                   Select::make('branch_id')
                             ->label('Branch')
                             ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
-                            ->live()
-                            ->afterStateUpdated(function ($set) {
-                                  $set('from_account', null);
-                                  $set('currency_id', null);
-                              })
                             ->searchable()
-                            ->columnSpan(4),
+                            ->columnSpan(3),
 
-                TextInput::make('type')
-                    ->label('Expense Type')
+                  Select::make('service_id')
+                            ->label('Expense Category')
+                            ->options(Service::where('status', true)->where('is_income', false)->pluck('title', 'id'))
+                            ->searchable()
+                            ->columnSpan(3),
+
+                TextInput::make('name')
+                    ->label('Expense Name')
                     ->required()
-                    ->maxLength(255)->columnSpan(8),
+                    ->maxLength(255)->columnSpan(6)
+                     ->helperText('Expense name should be unique within the same branch and category'),
                 ])->columnSpanFull(),
             ]);
     }

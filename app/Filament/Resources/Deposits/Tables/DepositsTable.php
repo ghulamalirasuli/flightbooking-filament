@@ -52,6 +52,7 @@ use App\Models\Branch;
 use App\Models\CashBox;
 use App\Models\Expense_type;
 use App\Models\Expense;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +81,17 @@ class DepositsTable
 
                  TextColumn::make('reference_no')
                     ->label('Reference No.')
+                    ->searchable(),
+
+                    TextColumn::make('account_type')
+                    ->label('Type')
+                    ->default('Exchange')
+                    ->badge() // Optional: makes the status look like a pill
+                    ->color(fn (string $state): string => match ($state) {
+                        'Account' => 'success',
+                        'Expense' => 'danger',
+                        default => 'gray',
+                    })
                     ->searchable(),
 
                     TextColumn::make('description')
@@ -382,11 +394,11 @@ Action::make('exchange')
                         ->live()
                         ->afterStateUpdated(function ($set) {
                             $set('from_account', null);
-                            $set('type', null); // Reset expense type too
+                            $set('expense_type', null); // Reset expense type too
                             $set('currency_id', null);
                         })
                         ->searchable()
-                        ->columnSpan(3),
+                        ->columnSpan(4),
                     
                     Select::make('account_type')
                         ->label('Account Type')
@@ -399,10 +411,9 @@ Action::make('exchange')
                         ->afterStateUpdated(function ($set) {
                             // Optional: Clear selections when switching types to prevent stale data
                             $set('from_account', null);
-                            $set('type', null);
-                            $set('currency_id', null);
+                            $set('expense_type', null);
                         })
-                        ->columnSpan(3),
+                        ->columnSpan(4),
 
                     Group::make([
                         // List of Accounts if account_type is Account
@@ -431,8 +442,7 @@ Action::make('exchange')
                             ->required(fn (callable $get) => $get('account_type') === 'Account') // Only required if visible
                             ->afterStateUpdated(fn ($set) => $set('currency_id', null))
                             ->searchable(),
-                
-                // List of Expenses if account_type is Expense
+            // List of Expenses if account_type is Expense
                         Select::make('expense_type')
                             ->label('Expense Type')
                             ->visible(fn (callable $get) => $get('account_type') === 'Expense') // 3. ADD VISIBILITY CONDITION
@@ -441,21 +451,23 @@ Action::make('exchange')
                                 if (!$branchid) return [];
                                 
                                 return Expense_type::query()
+                                    ->with('servicetype') // Eager load the service relationship
                                     ->where('is_active', true)
                                     ->where('branch_id', $branchid)
-                                    ->pluck('type', 'type')
+                                    ->get()
+                                    ->mapWithKeys(function ($expenseType) {
+                                        // Retrieve the service title, fallback to empty string if not found
+                                        $serviceName = $expenseType->servicetype?->title ?? 'No Service';
+                                        
+                                        // Format the display output as: ExpenseName (ServiceName)
+                                        return [$expenseType->name => "{$expenseType->name} ({$serviceName})"];
+                                    })
                                     ->toArray();
                             })
                             ->searchable()
                             ->required(fn (callable $get) => $get('account_type') === 'Expense'), // Only required if visible
 
-                        Placeholder::make('from_balance_preview')
-                            ->hiddenLabel()
-                            ->visible(fn ($get) => filled($get('from_account')) && $get('account_type') === 'Account') // Ensure it only shows for Accounts
-                            ->content(fn ($get) => view('filament.components.account-balance-table', [
-                                'branchid' => $get('from_account')
-                            ])),
-                    ])->columnSpan(6),
+                    ])->columnSpan(4),
                 ]),
                         // ROW 2: Account and Currency (DEPENDENT)
                         Grid::make(12)->schema([
@@ -468,25 +480,11 @@ Action::make('exchange')
                                 'Credit' => 'Credit',
                             ])->required()->columnSpan(4),
 
-                       Select::make('currency_id')
-                                ->label('Currency')
-                                ->options(function (callable $get) {
-                                    $accountUid = $get('from_account');
-                                    if (!$accountUid) return [];
-                                    
-                                    $account = Accounts::where('uid', $accountUid)->first();
-                                    if (!$account || empty($account->access_currency)) return [];
-
-                                    return Currency::query()
-                                        ->whereIn('id', $account->access_currency)
-                                        ->where('status', true)
-                                        ->pluck('currency_name', 'id')
-                                        ->toArray();
-                                })
-                                ->searchable()
-                                ->required()
-                                ->noSearchResultsMessage('No currency found for this account.')
-                                ->columnSpan(4),
+                     Select::make('currency_id')
+                        ->label('Currency')
+                        ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
+                        ->searchable()
+                         ->columnSpan(4),
 
                         TextInput::make('amount_from')
                             ->label("Amount")
@@ -509,61 +507,80 @@ Action::make('exchange')
     ])
     ->action(function (array $data, Action $action, $form, array $arguments) {
         DB::transaction(function () use ($data) {
+                               if($data['account_type']=='Expense'){
+                                // 1. Fetch the Expense_type record to get the associated service_id
+                                $expenseTypeRecord = Expense_type::where('name', $data['expense_type'])
+                                    ->where('branch_id', $data['branch_id'])
+                                    ->first();
+
+                                     $service =  Service::where('id', $expenseTypeRecord?->service_id)->first();
+                                    $from_account = $expenseTypeRecord->name . ' - ' . $service?->title; // Store the expense type name for cash box reference
+                               }
+                               else{
+                                $from_account = $data['from_account'];
+                               }
                         // Insert into cash_box table
                         $cashBox = CashBox::create([
-                            'uid' => 'CBI' . now()->format('ymdhis'),
-                            'from_account' => $data['from_account'],
-                            'amount_from' => $data['amount_from'],
+                            'uid'           => 'CBI' . now()->format('ymdhis'),
+                            'from_account'  =>$from_account,
+                            'amount_from'   => $data['amount_from'],
                             'currency_from' => $data['currency_id'],
-                            'reference_no' => 'CBR' . now()->format('ymdhis'),
-                            'reference' => 'CB' . now()->format('ymdhis'),
-                            'credit' => $data['entry_type'] === 'Credit' ? 0 : $data['amount_from'],
-                            'debit' => $data['entry_type'] === 'Debit' ? 0 :  $data['amount_from'],
-                            'description' => $data['description'],
-                            'currency_id' => $data['currency_id'],
-                            'entry_type' => $data['entry_type'],
-                            'branch_id' => $data['branch_id'],
-                            'user_id' => auth()->id(),
-                            'date_confirm' => now()->format('Y-m-d'),
-                            'date_update' => now()->format('Y-m-d'),
+                            'reference_no'  => 'CBR' . now()->format('ymdhis'),
+                            'reference'     => 'CB' . now()->format('ymdhis'),
+                            'credit'        => $data['entry_type'] === 'Credit' ? 0 : $data['amount_from'],
+                            'debit'         => $data['entry_type'] === 'Debit' ? 0 :  $data['amount_from'],
+                            'description'   => $data['description'],
+                            'currency_id'   => $data['currency_id'],
+                            'entry_type'    => $data['entry_type'],
+                            'branch_id'     => $data['branch_id'],
+                            'user_id'       => auth()->id(),
+                            'date_confirm'  => now()->format('Y-m-d'),
+                            'date_update'   => now()->format('Y-m-d'),
+                            'account_type'  => $data['account_type'], // Store the account type for later reference
                         ]);
 
                         if($data['account_type']=='Account'){
                         // Insert into account_ledger table
                         Account_ledger::create([
-                            'uid' => 'CBI' . now()->format('ymdhis'),
-                            'account' => $data['from_account'],
-                            'reference_no' => 'CBR' . now()->format('ymdhis'),
-                            'reference' => 'CB' . now()->format('ymdhis'),
-                            'description' => $data['description'],
-                            'credit' => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
-                            'debit' => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
-                            'currency' => $data['currency_id'],
-                            'user_id' => auth()->id(),
-                            'branch_id' => $data['branch_id'],
-                            'date_confirm' => now()->format('Y-m-d'),
-                            'date_update' => now()->format('Y-m-d'),
-                            'pay_status' =>'Cash',
+                            'uid'           => 'CBI' . now()->format('ymdhis'),
+                            'account'       => $data['from_account'],
+                            'reference_no'  => 'CBR' . now()->format('ymdhis'),
+                            'reference'     => 'CB' . now()->format('ymdhis'),
+                            'description'   => $data['description'],
+                            'credit'        => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
+                            'debit'         => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
+                            'currency'      => $data['currency_id'],
+                            'user_id'       => auth()->id(),
+                            'branch_id'     => $data['branch_id'],
+                            'date_confirm'  => now()->format('Y-m-d'),
+                            'date_update'   => now()->format('Y-m-d'),
+                            'pay_status'    =>'Cash',
                             'table_name'    => 'deposit',
                         ]);
                         }
                         elseif($data['account_type']=='Expense'){
+
+                        // 1. Fetch the Expense_type record to get the associated service_id
+    $expenseTypeRecord = \App\Models\Expense_type::where('name', $data['expense_type'])
+        ->where('branch_id', $data['branch_id'])
+        ->first();
+
                                 Expense::create([
                                     'uid'              => 'CBI' . now()->format('ymdhis'),
                                     'branch_id'        => $data['branch_id'],
                                     'user_id'          => auth()->id(),
-                                    'expense_id'        => $data['type'],
-                                    'account'         => $data['account'] ?? null,
-                                    'currency'       => $data['currency'] ?? null,
-                                    'reference_no'     => $batchReferenceNo, // Shared Batch ID
-                                    'reference'        => $uniqueRef,        // Unique ID
+                                    'service_id'       => $expenseTypeRecord?->service_id, // Safely extract the service_id
+                                    'expensetype'      => $data['expense_type'], // The string name from the select field
+                                    'currency'         => $data['currency_id'] ?? null,
+                                    'reference_no'     => 'CBR' . now()->format('ymdhis'),
+                                    'reference'        => 'CB' . now()->format('ymdhis'),
                                     'description'      => $data['description'] ?? null,
-                                    'credit'      => $data['entry_type'] === 'Credit' ? $data['amount'] : 0 ,
-                                    'debit'      => $data['entry_type'] === 'Debit' ? $data['amount'] : 0 ,
+                                    'credit'           => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0 ,
+                                    'debit'            => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0 ,
                                     'date_confirm'     => now(),
                                     'date_update'      => now(),
-                                    'status'        => 'Pending',
-                                    'entry_type' => $data['entry_type'] ?? null,
+                                    'status'           => 'Pending',
+                                    'entry_type'       => $data['entry_type'] ?? null,
                         ]);
                         }
 
@@ -870,38 +887,84 @@ Action::make('exchange')
                 Grid::make(12)->schema([
                     Select::make('branch_id')
                         ->label('Branch')
-                        ->options(\App\Models\Branch::where('status', true)->pluck('branch_name', 'id'))
+                        ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
                         ->live()
                         ->afterStateUpdated(function ($set) {
                             $set('from_account', null);
+                            $set('expense_type', null); // Reset expense type too
                             $set('currency_id', null);
                         })
-                        ->columnSpan(6),
+                        ->searchable()
+                        ->columnSpan(4),
 
-                    Select::make('from_account')
-                        ->label('Account')
-                        ->options(function (callable $get, $record) {
-                            // Use state from form, fallback to the record's branch if form state is empty
-                            $branchId = $get('branch_id') ?? $record->branch_id;
-                            
-                            if (!$branchId) return [];
-
-                            return \App\Models\Accounts::query()
-                                ->with(['accountType', 'branch'])
-                                ->where('is_active', true)
-                                ->where('branch_id', $branchId)
-                                ->get()
-                                ->mapWithKeys(function ($account) {
-                                    $name = $account->account_name;
-                                    $category = $account->accountType?->accounts_category ?? 'N/A';
-                                    $branch = $account->branch?->branch_name ?? 'N/A';
-                                    return [$account->uid => "({$branch}) {$name} - {$category}"];
-                                });
-                        })
-                        ->live()
+                             Select::make('account_type')
+                        ->label('Account Type')
+                        ->options([
+                            'Account' => 'Account',
+                            'Expense' => 'Expense',
+                        ])
                         ->required()
-                        ->afterStateUpdated(fn ($set) => $set('currency_id', null))
-                        ->columnSpan(6),
+                        ->live() // 1. MAKE THIS LIVE
+                        ->afterStateUpdated(function ($set) {
+                            // Optional: Clear selections when switching types to prevent stale data
+                            $set('from_account', null);
+                            $set('expense_type', null);
+                        })
+                        ->columnSpan(4),
+
+                      Group::make([
+                        // List of Accounts if account_type is Account
+                        Select::make('from_account')
+                            ->label('Account')
+                            ->visible(fn (callable $get) => $get('account_type') === 'Account') // 2. ADD VISIBILITY CONDITION
+                            ->options(function (callable $get) {
+                                $branchId = $get('branch_id');
+
+                                return Accounts::query()
+                                    ->with(['accountType', 'branch']) 
+                                    ->where('is_active', true)
+                                    ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                                    ->get()
+                                    ->mapWithKeys(function ($account) {
+                                        $name = $account->account_name;
+                                        $category = $account->accountType?->accounts_category ?? 'N/A';
+                                        $branch = $account->branch?->branch_name ?? 'N/A';
+
+                                        return [
+                                            $account->uid => "({$branch}) {$name} - {$category}"
+                                        ];
+                                    });
+                            })
+                            ->live()
+                            ->required(fn (callable $get) => $get('account_type') === 'Account') // Only required if visible
+                            ->afterStateUpdated(fn ($set) => $set('currency_id', null))
+                            ->searchable(),
+            // List of Expenses if account_type is Expense
+                        Select::make('expense_type')
+                            ->label('Expense Type')
+                            ->visible(fn (callable $get) => $get('account_type') === 'Expense') // 3. ADD VISIBILITY CONDITION
+                            ->options(function (callable $get) {
+                                $branchid = $get('branch_id');
+                                if (!$branchid) return [];
+                                
+                                return Expense_type::query()
+                                    ->with('servicetype') // Eager load the service relationship
+                                    ->where('is_active', true)
+                                    ->where('branch_id', $branchid)
+                                    ->get()
+                                    ->mapWithKeys(function ($expenseType) {
+                                        // Retrieve the service title, fallback to empty string if not found
+                                        $serviceName = $expenseType->servicetype?->title ?? 'No Service';
+                                        
+                                        // Format the display output as: ExpenseName (ServiceName)
+                                        return [$expenseType->name => "{$expenseType->name} ({$serviceName})"];
+                                    })
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->required(fn (callable $get) => $get('account_type') === 'Expense'), // Only required if visible
+
+                    ])->columnSpan(4),
                 ]),
                 Grid::make(12)->schema([
                     Select::make('entry_type')
@@ -910,23 +973,11 @@ Action::make('exchange')
                         ->required()
                         ->columnSpan(4),
 
-                    Select::make('currency_id')
+               Select::make('currency_id')
                         ->label('Currency')
-                        ->options(function (callable $get, $record) {
-                            // Use state from form, fallback to the record's account if form state is empty
-                            $accountUid = $get('from_account') ?? $record->from_account;
-                            
-                            if (!$accountUid) return [];
-
-                            $account = \App\Models\Accounts::where('uid', $accountUid)->first();
-                            if (!$account || empty($account->access_currency)) return [];
-
-                            return \App\Models\Currency::whereIn('id', $account->access_currency)
-                                ->where('status', true)
-                                ->pluck('currency_name', 'id');
-                        })
-                        ->required()
-                        ->columnSpan(4),
+                        ->options(Currency::where('status', true)->pluck('currency_name', 'id'))
+                        ->searchable()
+                         ->columnSpan(4),
 
                     TextInput::make('amount_from')
                         ->label("Amount")
@@ -940,30 +991,86 @@ Action::make('exchange')
     // Ensure data is saved to both CashBox and Account_ledger
     ->action(function ($record, array $data): void {
         \DB::transaction(function () use ($record, $data) {
+            // 1. Get the shared identifier (assuming it's reference_no)
+        $refNo = $record->reference_no; 
+
+        // 2. Delete ALL previously associated records
+                Expense::where('reference_no', $refNo)->delete();
+                Account_ledger::where('reference_no', $refNo)->delete();
+
+               if($data['account_type']=='Expense'){
+                                // 1. Fetch the Expense_type record to get the associated service_id
+                                $expenseTypeRecord = Expense_type::where('name', $data['expense_type'])
+                                    ->where('branch_id', $data['branch_id'])
+                                    ->first();
+
+                                     $service =  Service::where('id', $expenseTypeRecord?->service_id)->first();
+                                    $from_account = $expenseTypeRecord->name . ' - ' . $service?->title; // Store the expense type name for cash box reference
+                               }
+                               else{
+                                $from_account = $data['from_account'];
+                               }
             // 1. Update the Deposit Record (CashBox)
             $record->update([
-                'branch_id'     => $data['branch_id'],
-                'from_account'   => $data['from_account'],
-                'entry_type'     => $data['entry_type'],
-                'currency_id'    => $data['currency_id'],
-                'currency_from'  => $data['currency_id'],
+                'branch_id'      => $data['branch_id'],
+                'from_account'   => $from_account,
                 'amount_from'    => $data['amount_from'],
+                'currency_from'  => $data['currency_id'],
                 'debit'          => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
                 'credit'         => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
                 'description'    => $data['description'],
+                'currency_id'    => $data['currency_id'],
+                'entry_type'     => $data['entry_type'],
                 'date_update'    => now()->format('Y-m-d'),
+                'account_type'   => $data['account_type'], // Store the account type for later reference
             ]);
 
             // 2. Update the corresponding Ledger Record
-            \App\Models\Account_ledger::where('reference_no', $record->reference_no)->update([
-                'branch_id'   => $data['branch_id'],
-                'account'     => $data['from_account'],
-                'currency'    => $data['currency_id'],
-                'debit'       => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
-                'credit'      => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
-                'description' => $data['description'],
-                'date_update' => now()->format('Y-m-d'),
-            ]);
+            if($data['account_type']=='Account'){
+                Account_ledger::create([
+                            'uid' => $record->uid,
+                            'account' => $data['from_account'],
+                            'reference_no' => $refNo,
+                            'reference' => $record->reference,
+                            'description' => $data['description'],
+                            'credit' => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0,
+                            'debit' => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0,
+                            'currency' => $data['currency_id'],
+                            'user_id' => auth()->id(),
+                            'branch_id' => $data['branch_id'],
+                            'date_confirm' => now()->format('Y-m-d'),
+                            'date_update' => now()->format('Y-m-d'),
+                            'pay_status' =>'Cash',
+                            'table_name'    => 'deposit',
+                        ]);
+
+             }
+                        elseif($data['account_type']=='Expense'){
+
+                        // 1. Fetch the Expense_type record to get the associated service_id
+                            $expenseTypeRecord = Expense_type::where('name', $data['expense_type'])
+                                ->where('branch_id', $data['branch_id'])
+                                ->first();
+
+                             Expense::create([
+                                    'uid'              => $record->uid ,
+                                    'branch_id'        => $data['branch_id'],
+                                    'user_id'          => auth()->id(),
+                                    'service_id'       => $expenseTypeRecord?->service_id, // Safely extract the service_id
+                                    'expensetype'      => $data['expense_type'], // The string name from the select field
+                                    'currency'         => $data['currency_id'] ?? null,
+                                    'reference_no'     => $refNo,
+                                    'reference'        => $record->reference,
+                                    'description'      => $data['description'] ?? null,
+                                    'credit'           => $data['entry_type'] === 'Credit' ? $data['amount_from'] : 0 ,
+                                    'debit'            => $data['entry_type'] === 'Debit' ? $data['amount_from'] : 0 ,
+                                    'date_confirm'     => now(),
+                                    'date_update'      => now(),
+                                    'status'           => 'Pending',
+                                    'entry_type'       => $data['entry_type'] ?? null,
+                        ]);
+                        
+                        }
         });
 
         \Filament\Notifications\Notification::make()

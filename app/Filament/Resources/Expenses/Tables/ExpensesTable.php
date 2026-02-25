@@ -64,7 +64,7 @@ class ExpensesTable
                 TextColumn::make('reference_no')
                     ->searchable(),
 
-                   TextColumn::make('expenseType.type') // Shows the name instead of the ID
+                   TextColumn::make('expenseType.expensetype') // Shows the name instead of the ID
                     ->label('Expense type')
                     ->searchable()
                     ->sortable(),

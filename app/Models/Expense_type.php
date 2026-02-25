@@ -14,7 +14,7 @@ class Expense_type extends Model
 
     protected $table = 'expense_type';
 
-    protected $fillable = ['uid','type','slug','is_active','branch_id','user_id'];
+    protected $fillable = ['uid','name','service_id','slug','is_active','branch_id','user_id'];
 
     /* ---------- RELATIONSHIPS ---------- */
 
@@ -27,7 +27,7 @@ class Expense_type extends Model
         $model->uid = 'XT' . now()->format('ymdhis');
     }
 
-    $baseSlug = Str::slug($model->type);
+    $baseSlug = Str::slug($model->name);
     $slug = $baseSlug;
     $count = 1;
 
@@ -54,8 +54,10 @@ class Expense_type extends Model
         return $this->belongsTo(User::class, 'user_id', 'uid');
     }
 
-    public function expenses(): HasMany
+
+    public function servicetype(): BelongsTo
     {
-        return $this->hasMany(Expense::class, 'expense_uid', 'uid');
+        return $this->belongsTo(Service::class, 'service_id', 'id');
     }
+
 }
