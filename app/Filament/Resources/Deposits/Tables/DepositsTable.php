@@ -560,10 +560,10 @@ Action::make('exchange')
                         }
                         elseif($data['account_type']=='Expense'){
 
-                        // 1. Fetch the Expense_type record to get the associated service_id
-    $expenseTypeRecord = \App\Models\Expense_type::where('name', $data['expense_type'])
-        ->where('branch_id', $data['branch_id'])
-        ->first();
+                                    // 1. Fetch the Expense_type record to get the associated service_id
+                                $expenseTypeRecord = \App\Models\Expense_type::where('name', $data['expense_type'])
+                                    ->where('branch_id', $data['branch_id'])
+                                    ->first();
 
                                 Expense::create([
                                     'uid'              => 'CBI' . now()->format('ymdhis'),
@@ -645,114 +645,94 @@ Action::make('exchange')
             ->filtersFormWidth(Width::Full)
             ->recordActions([
                ActionGroup::make([
-                        
-                // ---PDF  PRINT ACTION ---
-        // Action::make('print')
-        //     ->label('Print Receipt')
-        //     ->icon('heroicon-m-printer')
-        //     ->color('info')
-        //     ->action(function ($record) {
-        //         // Load a blade view and pass the record data
-        //         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('print.deposit-pdf', [
-        //             'record' => $record,
-        //         ]);
-
-        //         // Download the file
-        //         return response()->streamDownload(function () use ($pdf) {
-        //             echo $pdf->output();
-        //         }, "Deposit_{$record->reference_no}.pdf");
-        //     }),
                 // --- CONFIRM ACTION ---
-        Action::make('confirm')
-            ->label('Confirm')
-            ->icon('heroicon-m-check-badge')
-            ->color('success')
-            ->requiresConfirmation()
-            ->visible(fn ($record) => $record->status !== 'Confirmed')
-            ->action(function ($record) {
-                // 1. Update the CashBox record
-                // $record->update(['status' => 'Confirmed','update_by' => auth()->id()]); // single row by ID
-                // 1. Update ALL rows in CashBox with this reference number
-            \App\Models\CashBox::where('reference_no', $record->reference_no)
-                ->update([
-                    'status' => 'Confirmed',
-                    'update_by' => auth()->id(),
-                    'date_update' => now()->format('Y-m-d'),
-                ]);
+                Action::make('confirm')
+                    ->label('Confirm')
+                    ->icon('heroicon-m-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status !== 'Confirmed')
+                    ->action(function ($record) {
+                        // 1. Update the CashBox record
+                        // $record->update(['status' => 'Confirmed','update_by' => auth()->id()]); // single row by ID
+                        // 1. Update ALL rows in CashBox with this reference number
+                        CashBox::where('reference_no', $record->reference_no)
+                        ->update([
+                            'status' => 'Confirmed',
+                            'update_by' => auth()->id(),
+                            'date_update' => now()->format('Y-m-d'),
+                        ]);
 
-                // 2. Update the related Account Ledger record
-                Account_ledger::where('reference_no', $record->reference_no)
-                    ->update(['status' => 'Confirmed']);
+                        // 2. Update the related Account Ledger record
+                        Account_ledger::where('reference_no', $record->reference_no)
+                            ->update(['status' => 'Confirmed']);
 
-                Notification::make()->title('Deposit Confirmed')->success()->send();
-            }),
+                        Notification::make()->title('Deposit Confirmed')->success()->send();
+                    }),
 
-        // --- CANCEL ACTION ---
-        Action::make('cancel')
-            ->label('Cancel')
-            ->icon('heroicon-m-x-circle')
-            ->color('danger')
-            ->requiresConfirmation()
-            ->visible(fn ($record) => $record->status !== 'Cancelled')
-            ->action(function ($record) {
-                // 1. Update the CashBox record
-                // $record->update(['status' => 'Cancelled','update_by' => auth()->id()]);
+                // --- CANCEL ACTION ---
+                Action::make('cancel')
+                    ->label('Cancel')
+                    ->icon('heroicon-m-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status !== 'Cancelled')
+                    ->action(function ($record) {
+                        // 1. Update the CashBox record
+                        // $record->update(['status' => 'Cancelled','update_by' => auth()->id()]);
 
-                   \App\Models\CashBox::where('reference_no', $record->reference_no)
-                ->update([
-                    'status' => 'Cancelled',
-                    'update_by' => auth()->id(),
-                    'date_update' => now()->format('Y-m-d'),
-                ]);
-                // 2. Update the related Account Ledger record
-                Account_ledger::where('reference_no', $record->reference_no)
-                    ->update(['status' => 'Cancelled']);
+                        CashBox::where('reference_no', $record->reference_no)
+                        ->update([
+                            'status' => 'Cancelled',
+                            'update_by' => auth()->id(),
+                            'date_update' => now()->format('Y-m-d'),
+                        ]);
+                        // 2. Update the related Account Ledger record
+                        Account_ledger::where('reference_no', $record->reference_no)
+                            ->update(['status' => 'Cancelled']);
 
-                Notification::make()->title('Deposit Cancelled')->danger()->send();
-            }),
+                        Notification::make()->title('Deposit Cancelled')->danger()->send();
+                    }),
 
-        // --- SET PENDING ACTION ---
-        Action::make('setPending')
-            ->label('Mark as Pending')
-            ->icon('heroicon-m-pause-circle')
-            ->color('gray')
-            ->visible(fn ($record) => $record->status !== 'Pending')
-            ->action(function ($record) {
-                // 1. Update the CashBox record
-                // $record->update(['status' => 'Pending','update_by' => auth()->id()]);
-                   \App\Models\CashBox::where('reference_no', $record->reference_no)
-                ->update([
-                    'status' => 'Pending',
-                    'update_by' => auth()->id(),
-                    'date_update' => now()->format('Y-m-d'),
-                ]);
+                // --- SET PENDING ACTION ---
+                Action::make('setPending')
+                    ->label('Mark as Pending')
+                    ->icon('heroicon-m-pause-circle')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->status !== 'Pending')
+                    ->action(function ($record) {
+                        // 1. Update the CashBox record
+                        // $record->update(['status' => 'Pending','update_by' => auth()->id()]);
+                        CashBox::where('reference_no', $record->reference_no)
+                        ->update([
+                            'status' => 'Pending',
+                            'update_by' => auth()->id(),
+                            'date_update' => now()->format('Y-m-d'),
+                        ]);
 
-                // 2. Update the related Account Ledger record
-                Account_ledger::where('reference_no', $record->reference_no)
-                    ->update(['status' => 'Pending']);
+                        // 2. Update the related Account Ledger record
+                        Account_ledger::where('reference_no', $record->reference_no)
+                            ->update(['status' => 'Pending']);
 
-                Notification::make()->title('Deposit set to Pending')->info()->send();
-            }),
+                        Notification::make()->title('Deposit set to Pending')->info()->send();
+                    }),
 
-            // --------- Print-----------
-            Action::make('print')
-            ->label('Print')
-            ->icon('heroicon-m-printer')
-            ->color('info')
-            // Pass the single ID as 'record'
-            ->url(fn ($record) => route('deposits.print', ['record' => $record->id]))
-            ->openUrlInNewTab(),
-
-            // ViewAction::make(), 
-            ViewAction::make()
-    ->modalHeading(fn ($record) => $record->entry_type === 'Exchange' ? 'View Exchange Details' : 'View Deposit Details')
-    ->infolist(function ($record): array {
+                    // --------- Print-----------
+                   Action::make('print')
+                        ->label('Print')
+                        ->icon('heroicon-m-printer')
+                        ->color('info')
+                        ->visible(fn ($record) => $record->entry_type !== 'Exchange') // <-- Fixed here
+                        ->url(fn ($record) => route('deposits.print', ['record' => $record->id]))
+                        ->openUrlInNewTab(),
+                    // ViewAction::make(), 
+                    ViewAction::make()
+            ->modalHeading(fn ($record) => $record->entry_type === 'Exchange' ? 'View Exchange Details' : 'View Deposit Details')
+            ->infolist(function ($record): array {
         // --- 1. VIEW FOR EXCHANGE TYPE ---
         if ($record->entry_type === 'Exchange') {
             // 1. Fetch the paired record (The other side of the exchange)
-            $related = \App\Models\CashBox::where('uid', $record->uid)
-                ->where('id', '!=', $record->id)
-                ->first();
+            $related = CashBox::where('uid', $record->uid)->where('id', '!=', $record->id)->first();
 
             // 2. Identify which row is Selling (Debit) and which is Buying (Credit)
             $sellRow = $record->debit > 0 ? $record : $related;

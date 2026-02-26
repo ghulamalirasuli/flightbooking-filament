@@ -39,7 +39,6 @@
                 <th>Reference No</th>
                 <th>Inserted By</th>
                 <th>Expense Type</th>
-                <th>Account</th>
                 <th>Entry Type</th>
                 <th class="text-right">Amount</th>
                 <th class="text-center">Status</th>
@@ -50,8 +49,7 @@
                 <tr>
                     <td>{{ $expense->reference_no }}</td>
                     <td>{{ $expense->user?->name ?? 'N/A' }}<br><small>{{ $expense->created_at?->format('M d, Y H:i') }}</small></td>
-                    <td>{{ $expense->expenseType?->type ?? 'N/A' }}</td>
-                    <td>{{ $expense->accountExp?->account_name ?? 'N/A' }}</td>
+                    <td>{{ $expense->expenseTypeRecord?->name ?? 'N/A' }} ({{ $expense->servicetype?->title ?? 'N/A' }})</td>
                     <td>{{ $expense->entry_type }}</td>
                     <td class="text-right">
                         {{ number_format($expense->entry_type === 'Credit' ? $expense->credit : $expense->debit, 2) }}

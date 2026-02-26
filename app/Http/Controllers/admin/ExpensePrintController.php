@@ -12,7 +12,7 @@ class ExpensePrintController extends Controller
     public function print(Request $request)
     {
         // Eager load relationships to prevent N+1 queries
-        $query = Expense::with(['user', 'expenseType', 'accountExp', 'currencyExp', 'updated_by']);
+        $query = Expense::with(['user', 'expenseTypeRecord', 'servicetype', 'currencyExp', 'updated_by']);
 
         // Retrieve the filter state passed from Filament
         $filters = $request->input('filters', []);

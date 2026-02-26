@@ -8,7 +8,7 @@ use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Account_ledger;
+use App\Models\Expense_type;
 
 class EditExpense extends EditRecord
 {
@@ -32,10 +32,14 @@ class EditExpense extends EditRecord
             
             $userId = Auth::id(); // Defined here to be used in both updates
 
+             $expenseTypeRecord = Expense_type::where('name', $data['expense_type'])
+                                 ->where('branch_id', $data['branch_id'])
+                                 ->first();
+
             // 1. Update main transaction record
             $record->update([
-                'expense_id'  => $data['expense_id'],
-                'account'     => $data['account'] ?? null,
+                'service_id'  => $expenseTypeRecord->service_id ?? null,
+                'expensetype' => $data['expense_type'] ?? null,
                 'currency'    => $data['currency'] ?? null,
                 'description' => $data['description'] ?? null,
                 'credit'      => $data['entry_type'] === 'Credit' ? $data['amount'] : 0,
@@ -45,18 +49,6 @@ class EditExpense extends EditRecord
                 'update_by'   => $userId,
             ]);
 
-            // 2. Update linked Ledger entry (flipping Debit/Credit logic)
-            Account_ledger::where('uid', $record->uid)
-                ->update([
-                    'account'      => $data['account'], 
-                    'description'  => $data['description'],
-                    'credit'       => $data['entry_type'] === 'Debit' ? $data['amount'] : 0, 
-                    'debit'        => $data['entry_type'] === 'Credit' ? $data['amount'] : 0,
-                    'currency'     => $data['currency'],
-                    'user_id'      => $userId,
-                    'branch_id'    => $data['branch_id'],
-                    'date_update'  => now(),
-                ]);
 
             return $record;
         });

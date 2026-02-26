@@ -161,7 +161,7 @@
                         <div class="col-7">
                             <span class="data-label d-block">Beneficiary Account</span>
                             <h6 class="fw-bold mb-0" style="font-size: 13px;">
-                                {{ $record->account?->account_name_with_category_and_branch ?? 'Exchange' }}
+                                {{ $record->account?->account_name_with_category_and_branch ?? $record->from_account ?? 'Exchange' }}
                             </h6>
                         </div>
                         <div class="col-5 border-start ps-3">

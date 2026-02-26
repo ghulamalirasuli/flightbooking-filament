@@ -122,6 +122,7 @@
                                 <th>Inserted</th>
                                 <th>Reference No.</th>
                                 <th>Description</th>
+                                 <th>Type</th>
                                 <th>Account</th>
                                 <th>Debit</th>
                                 <th>Credit</th>
@@ -137,7 +138,8 @@
                                 <td>{{ $deposit->created_at->format('M d, Y H:i') }}</td>
                                 <td>{{ $deposit->reference_no }}</td>
                                 <td>{{ $deposit->description }}</td>
-                                <td>{{ $deposit->account ? $deposit->account->account_name_with_category_and_branch : 'Exchange' }}</td>
+                                <td>{{ $deposit->account_type ?? 'Exchange' }}</td> 
+                                <td>{{ $deposit->account ? $deposit->account->account_name_with_category_and_branch : $deposit->from_account ?? 'Exchange' }}</td>
                                 <td>{{ $deposit->debit }} <br>{{ $deposit->currency->currency_code ?? '' }}</td>
                                 <td>{{ $deposit->credit }}<br> {{ $deposit->currency->currency_code ?? '' }}</td>
                                 <td>

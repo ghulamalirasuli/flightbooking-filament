@@ -39,69 +39,46 @@ class ExpenseForm
                                 ->options(Branch::where('status', true)->pluck('branch_name', 'id'))
                                 ->live()
                                 ->afterStateUpdated(function ($set) {
-                                    $set('account', null);
+                                    $set('expense_type', null);
                                     $set('currency', null);
-                                    $set('type', null);
                                 })
                                 ->searchable()
                                 ->columnSpan(6),
 
-                            Select::make('account')
-                                ->label('Account')
-                                ->options(function (callable $get) {
-                                    $branchId = $get('branch_id');
-
-                                    return Accounts::query()
-                                        ->with(['accountType', 'branch'])
-                                        ->where('is_active', true)
-                                        ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-                                        ->get()
-                                        ->mapWithKeys(function ($account) {
-                                            $name = $account->account_name;
-                                            $category = $account->accountType?->accounts_category ?? 'N/A';
-                                            $branch = $account->branch?->branch_name ?? 'N/A';
-
-                                            return [
-                                                $account->uid => "({$branch}) {$name} - {$category}",
-                                            ];
-                                        });
-                                })
-                                ->live()
-                                ->searchable()
-                                ->required()
+                              Select::make('expense_type')
+                            ->label('Expense Type')
+                            ->options(function (callable $get) {
+                                $branchid = $get('branch_id');
+                                if (!$branchid) return [];
+                                
+                                return Expense_type::query()
+                                    ->with('servicetype') // Eager load the service relationship
+                                    ->where('is_active', true)
+                                    ->where('branch_id', $branchid)
+                                    ->get()
+                                    ->mapWithKeys(function ($expenseType) {
+                                        // Retrieve the service title, fallback to empty string if not found
+                                        $serviceName = $expenseType->servicetype?->title ?? 'No Service';
+                                        
+                                        // Format the display output as: ExpenseName (ServiceName)
+                                        return [$expenseType->name => "{$expenseType->name} ({$serviceName})"];
+                                    })
+                                    ->toArray();
+                            })
+                            ->searchable()
                                 ->columnSpan(6),
 
                         ])->columnSpanFull(),
 
                         Grid::make(12)->schema([
 
-                            Select::make('expense_id')
-                                ->label('Expense Type')
-                                ->options(function (callable $get) {
-                                    $branchId = $get('branch_id');
-
-                                    // Return empty if no branch selected
-                                    if (!$branchId) {
-                                        return [];
-                                    }
-
-                                    return Expense_type::query()
-                                        ->where('is_active', true)
-                                        ->where('branch_id', $branchId)
-                                        ->pluck('type', 'id')
-                                        ->toArray();
-                                })
-                                ->searchable()
-                                ->required()
-                                ->columnSpan(3),
-
-                                  Select::make('entry_type')
+                              Select::make('entry_type')
                                 ->options([
                                     'Debit' => 'Debit',
                                     'Credit' => 'Credit',
                                 ])
                                 ->default('Debit')
-                                ->columnSpan(3),
+                                ->columnSpan(4),
 
                             Select::make('currency')
                                 ->label('Currency')
@@ -136,13 +113,13 @@ class ExpenseForm
                                 })
                                 ->searchable()
                                 ->required()
-                                ->columnSpan(3),
+                                ->columnSpan(4),
 
                             TextInput::make('amount')
                                 ->required()
                                 ->default(0)
                                 ->numeric()
-                                ->columnSpan(3),
+                                ->columnSpan(4),
 
 
                         ])->columnSpanFull(),

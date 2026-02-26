@@ -52,6 +52,10 @@ class ExpensesTable
     public static function configure(Table $table): Table
     {
         return $table
+         ->striped()
+        //  ->groups([
+        //     'servicetype.title' => 'service_id',
+        // ])
             ->columns([
               TextColumn::make('index')
                     ->label('#')
@@ -63,17 +67,16 @@ class ExpensesTable
                 ->searchable(),
                 TextColumn::make('reference_no')
                     ->searchable(),
-
-                   TextColumn::make('expenseType.expensetype') // Shows the name instead of the ID
-                    ->label('Expense type')
-                    ->searchable()
-                    ->sortable(),
-
                 
-               TextColumn::make('accountExp.account_name')
-                    ->label('Account')
-                    // This replaces the "Ahmad" with the "Ahmad - Category (Branch)" version
-                    ->formatStateUsing(fn ($record) => $record->accountExp?->account_name_with_category_and_branch ?? 'N/A')
+               TextColumn::make('expenseTypeRecord.name')
+                    ->label('Expense type')
+                    ->formatStateUsing(function ($state, Expense $record) {
+                        // $state is the 'name' from the expenseTypeRecord
+                        // We fetch the service title from the service relationship
+                        $serviceTitle = $record->servicetype?->title ?? 'No Service';
+                        
+                        return "{$state} - {$serviceTitle}";
+                    })
                     ->searchable()
                     ->sortable(),
 

@@ -53,10 +53,18 @@ protected static function boot()
      return $this->belongsTo(User::class, 'update_by', 'id');
   }
 
-    public function expenseType(): BelongsTo
-    {
-        return $this->belongsTo(Expense_type::class, 'expensetype', 'id');
-    }
+    // public function expenseType(): BelongsTo
+    // {
+    //     return $this->belongsTo(Expense_type::class, 'expensetype', 'id');
+    // }
+
+    // Inside App\Models\Expense.php
+
+public function expenseTypeRecord(): BelongsTo // Renamed from expenseType
+{
+    // Ensure the foreign key is explicitly stated as 'expensetype'
+    return $this->belongsTo(Expense_type::class, 'expensetype', 'name'); 
+}
 
     public function servicetype(): BelongsTo
     {

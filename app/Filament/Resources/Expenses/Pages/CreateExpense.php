@@ -14,7 +14,7 @@ use App\Models\Expense;
 use App\Models\Account_ledger;
 use App\Models\Branch;
 use App\Models\CashBox;
-use App\Models\Income_expense;
+use App\Models\Expense_type;
 
 class CreateExpense extends CreateRecord
 {
@@ -49,6 +49,10 @@ class CreateExpense extends CreateRecord
                 $uniqueUid = 'EX' . now()->format('ymdHis') . rand(10, 99); 
                 $uniqueRef = 'XR-' . now()->format('ymdHis') . rand(1000, 9999);
 
+                                    // 1. Fetch the Expense_type record to get the associated service_id
+            $expenseTypeRecord = Expense_type::where('name', $data['expense_type'])
+                                 ->where('branch_id', $data['branch_id'])
+                                 ->first();
 
 
                 // C. Prepare Data Array for Transaction Table
@@ -56,45 +60,23 @@ class CreateExpense extends CreateRecord
                     'uid'              => $uniqueUid,
                     'branch_id'        => $data['branch_id'],
                     'user_id'          => $userId,
-                    'expense_id'        => $data['expense_id'],
-                    'account'     => $data['account'] ?? null,
-                    'currency'       => $data['currency'] ?? null,
+                    'service_id'       => $expenseTypeRecord->service_id ?? null,
+                    'expensetype'      => $data['expense_type'] ?? null,
+                    'currency'         => $data['currency'] ?? null,
                     'reference_no'     => $batchReferenceNo, // Shared Batch ID
                     'reference'        => $uniqueRef,        // Unique ID
                     'description'      => $data['description'] ?? null,
-                    'credit'      => $data['entry_type'] === 'Credit' ? $data['amount'] : 0 ,
-                    'debit'      => $data['entry_type'] === 'Debit' ? $data['amount'] : 0 ,
+                    'credit'           => $data['entry_type'] === 'Credit' ? $data['amount'] : 0 ,
+                    'debit'            => $data['entry_type'] === 'Debit' ? $data['amount'] : 0 ,
                     'date_confirm'     => now(),
                     'date_update'      => now(),
-                    'status'        => 'Pending',
-                    'entry_type' => $data['entry_type'] ?? null,
+                    'status'          => 'Pending',
+                    'entry_type'      => $data['entry_type'] ?? null,
                 ];
 
                 // D. Create The Transaction Record
                 $record = static::getModel()::create($ExpData);
-                // $createdRecords[] = $record;
-
-                // ---------------------------------------------------------
-                // 3. CREATE LEDGERS (Linked to specific Record UID)
-                // ---------------------------------------------------------
-                
-                // Ledger: FROM Account (Income/Receivable logic)
-                Account_ledger::create([
-                    'uid'           => $uniqueUid, 
-                    'account'       => $data['account'], 
-                    'reference_no'  => $batchReferenceNo,
-                    'reference'     => $uniqueRef,
-                    'description'   => $data['description'],
-                    'credit'        => $data['entry_type'] === 'Debit' ? $data['amount'] : 0, 
-                    'debit'         => $data['entry_type'] === 'Credit' ? $data['amount'] : 0,
-                    'currency'      => $data['currency'],
-                    'status'        => 'Pending',
-                    'user_id'       => $userId,
-                    'branch_id'     => $data['branch_id'],
-                    'date_confirm'  => now(),
-                    'pay_status'     => 'Cash' ?? null,
-                    'table_name'    => 'Expense',
-                ]);
+       
    // ✅ RETURN THE RECORD - This was missing!
         return $record;
 
