@@ -1,59 +1,57 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+🧑‍💼 Admin Panel
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The system includes a powerful Admin Dashboard built with Filament that allows administrators to manage the entire flight booking and accounting workflow from a single interface.
 
-## About Laravel
+The admin panel provides a clean, fast, and user-friendly management environment for handling operational and financial data.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Main Capabilities
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Dashboard Overview
+Provides quick access to system modules and important information.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Currency Management
+Administrators can create and manage currencies, define buy and sell exchange rates, activate or deactivate currencies, and select default currencies used in the system.
 
-## Learning Laravel
+Account Management
+Manage system users and financial accounts.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Account Ledgers
+Track financial records and ledger activities for transparency.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Account Balance Monitoring
+View and filter account balances across different branches and currencies.
 
-## Laravel Sponsors
+Income & Expense Tracking
+Record and manage all financial transactions within the system.![9](https://github.com/user-attachments/assets/f2c5a300-1d42-4c2b-823f-4cc8a58f0629)
+![10](https://github.com/user-attachments/assets/a3d49c24-eb10-406b-a5c3-634cfdbd9357)
+![1](https://github.com/user-attachments/assets/07df6a79-f50b-4b12-a428-7dcc6933176f)
+![2](https://github.com/user-attachments/assets/001aff22-ec07-410a-93e5-e8a482732719)
+![3](https://github.com/user-attachments/assets/6812d93f-4fe1-4a4d-b4d3-e6587295906c)
+![4](https://github.com/user-attachments/assets/2d1b6e8b-ac2b-400a-acae-e50eac3bacb0)
+![5](https://github.com/user-attachments/assets/3127d996-d6a9-4a72-8082-8ef71e92bb80)
+![6](https://github.com/user-attachments/assets/fa8cdb09-c24a-4455-af09-10e298fd38a9)
+![7](https://github.com/user-attachments/assets/fce9da81-a001-4d88-9e1b-ff2435e38184)
+![8](https://github.com/user-attachments/assets/7884f17e-e4e2-4fff-83e8-d184db4f6952)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-### Premium Partners
+Transaction Management
+Maintain a complete history of financial operations.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Contact & Task Management
+Manage contacts and assign tasks within the system.
 
-## Contributing
+Admin Interface
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The admin panel is designed with Filament's modern UI components, providing:
 
-## Code of Conduct
+Toggle controls for quick activation/deactivation
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Table-based data management
 
-## Security Vulnerabilities
+Search and filtering capabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Quick actions such as View, Edit, and Delete
 
-## License
+Responsive layout for efficient workflow
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This structure allows administrators to manage business operations efficiently while maintaining clear financial records.
